@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Zabbor.ZabborBase.Entities;
 using Zabbor.ZabborBase.Enums;
 using Zabbor.ZabborBase.Inerfaces;
 
@@ -14,6 +15,7 @@ namespace Zabbor.ZabborBase.World
         private readonly TileType[,] _tiles;
         private readonly int _width;
         private readonly int _height;
+        private readonly List<Npc> _npcs = new List<Npc>();
 
         public Board1(int width, int height)
         {
@@ -22,9 +24,33 @@ namespace Zabbor.ZabborBase.World
             _tiles = new TileType[width, height];
 
             GenerateLayout();
+            PlaceNpcs();
         }
 
-        // Zmieniono nazwę metody, by była bardziej specyficzna dla tej planszy
+        private void PlaceNpcs()
+        {
+            _npcs.Add(new Npc(new Point(8, 8), Color.Yellow));
+            _npcs.Add(new Npc(new Point(15, 12), Color.Cyan));
+        }
+
+        public bool IsTileWalkable(Point tileCoordinates)
+        {
+            if (tileCoordinates.X < 0 || tileCoordinates.X >= _width ||
+                tileCoordinates.Y < 0 || tileCoordinates.Y >= _height)
+            {
+                return false;
+            }
+
+            // ZMODYFIKOWANA LOGIKA KOLIZJI
+            // Sprawdź, czy na docelowym polu stoi jakiś NPC
+            if (_npcs.Any(npc => npc.TilePosition == tileCoordinates))
+            {
+                return false;
+            }
+
+            return _tiles[tileCoordinates.X, tileCoordinates.Y] == TileType.Walkable;
+        }
+
         private void GenerateLayout()
         {
             // To jest unikalny układ dla "Board1"
@@ -50,17 +76,6 @@ namespace Zabbor.ZabborBase.World
             _tiles[11, 12] = TileType.Solid;
         }
 
-        // Te metody są wymagane przez interfejs IGameMap
-        public bool IsTileWalkable(Point tileCoordinates)
-        {
-            if (tileCoordinates.X < 0 || tileCoordinates.X >= _width ||
-                tileCoordinates.Y < 0 || tileCoordinates.Y >= _height)
-            {
-                return false;
-            }
-            return _tiles[tileCoordinates.X, tileCoordinates.Y] == TileType.Walkable;
-        }
-
         public void Draw(SpriteBatch spriteBatch)
         {
             for (int x = 0; x < _width; x++)
@@ -70,10 +85,15 @@ namespace Zabbor.ZabborBase.World
                     var tilePosition = new Vector2(x * Game1.TILE_SIZE, y * Game1.TILE_SIZE);
                     var tileColor = _tiles[x, y] == TileType.Solid ? new Color(139, 69, 19) : Color.DarkGreen;
 
-                    spriteBatch.Draw(Placeholder.Texture, 
-                        new Rectangle((int)tilePosition.X, (int)tilePosition.Y, Game1.TILE_SIZE, Game1.TILE_SIZE), 
+                    spriteBatch.Draw(Placeholder.Texture,
+                        new Rectangle((int)tilePosition.X, (int)tilePosition.Y, Game1.TILE_SIZE, Game1.TILE_SIZE),
                         tileColor);
                 }
+            }
+            // NOWA PĘTLA DO RYSOWANIA NPC
+            foreach (var npc in _npcs)
+            {
+                npc.Draw(spriteBatch);
             }
         }
     }

@@ -29,3 +29,4 @@ D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\refint\Zabbor.dll
 D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\Zabbor.pdb
 D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\Zabbor.genruntimeconfig.cache
 D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\ref\Zabbor.dll
+D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\Zabbor.sourcelink.json

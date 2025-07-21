@@ -25,7 +25,7 @@ namespace Zabbor.ZabborBase
         public static void Create(GraphicsDevice graphicsDevice)
         {
             Texture = new Texture2D(graphicsDevice, 1, 1);
-            Texture.SetData(new[] { Color.White });
+            Texture.SetData([Color.White]);
         }
 
         public void Draw(SpriteBatch spriteBatch)
