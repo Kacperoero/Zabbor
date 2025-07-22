@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Zabbor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+29e4a74d78b822d79f5f2ce9152e052f5e72008e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+045868e9776a00d76020801fab68bbefd5f01ea8")]
 [assembly: System.Reflection.AssemblyProductAttribute("Zabbor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Zabbor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

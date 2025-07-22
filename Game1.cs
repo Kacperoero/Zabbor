@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Zabbor.Core;
 using Zabbor.Managers;
 using Zabbor.ZabborBase;
 using Zabbor.ZabborBase.Interfaces;
@@ -16,10 +17,11 @@ namespace Zabbor
         private Player _player;
         private IGameMap _currentBoard; 
         public const int TILE_SIZE = 32;
-        private const int MAP_WIDTH = 25;
-        private const int MAP_HEIGHT = 19;
+        private const int MAP_WIDTH = 50;
+        private const int MAP_HEIGHT = 40;
         private SpriteFont _dialogFont;
         private DialogBox _activeDialog;
+        private Camera _camera;
 
         public Game1()
         {
@@ -30,8 +32,8 @@ namespace Zabbor
 
         protected override void Initialize()
         {
-            _graphics.PreferredBackBufferWidth = MAP_WIDTH * TILE_SIZE;
-            _graphics.PreferredBackBufferHeight = MAP_HEIGHT * TILE_SIZE;
+            _graphics.PreferredBackBufferWidth = 1280;
+            _graphics.PreferredBackBufferHeight = 720;
             _graphics.ApplyChanges();
             base.Initialize();
         }
@@ -49,6 +51,8 @@ namespace Zabbor
 
             DialogueManager.LoadDialogues();
             _currentBoard = new Board1(MAP_WIDTH, MAP_HEIGHT);
+
+            _camera = new Camera(GraphicsDevice.Viewport);
 
             var playerPosition = new Vector2(12 * TILE_SIZE, 9 * TILE_SIZE);
             _player = new Player(playerPosition, _currentBoard);
@@ -71,15 +75,21 @@ namespace Zabbor
             {
                 ShowDialog(dialogToShow);
             }
+
+            var mapSizeInPixels = new Point(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
+            _camera.Follow(_player.Position, mapSizeInPixels);
+
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
-            _spriteBatch.Begin();
+            _spriteBatch.Begin(transformMatrix: _camera.Transform);
             _currentBoard.Draw(_spriteBatch);
             _player.Draw(_spriteBatch);
+            _spriteBatch.End();
+            _spriteBatch.Begin();
             if (_activeDialog != null)
             {
                 _activeDialog.Draw(_spriteBatch);
