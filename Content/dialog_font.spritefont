@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<XnaContent xmlns:Graphics="Microsoft.Xna.Framework.Content.Pipeline.Graphics">
+  <Asset Type="Graphics:FontDescription">
+    <FontName>Arial</FontName>
+    <Size>16</Size>
+    <Spacing>0</Spacing>
+    <UseKerning>true</UseKerning>
+    <Style>Regular</Style>
+    <CharacterRegions>
+      <CharacterRegion>
+        <Start>&#32;</Start>
+        <End>&#126;</End>
+      </CharacterRegion>
+      
+      <CharacterRegion><Start>ą</Start><End>ą</End></CharacterRegion>
+      <CharacterRegion><Start>ć</Start><End>ć</End></CharacterRegion>
+      <CharacterRegion><Start>ę</Start><End>ę</End></CharacterRegion>
+      <CharacterRegion><Start>ł</Start><End>ł</End></CharacterRegion>
+      <CharacterRegion><Start>ń</Start><End>ń</End></CharacterRegion>
+      <CharacterRegion><Start>ó</Start><End>ó</End></CharacterRegion>
+      <CharacterRegion><Start>ś</Start><End>ś</End></CharacterRegion>
+      <CharacterRegion><Start>ź</Start><End>ź</End></CharacterRegion>
+      <CharacterRegion><Start>ż</Start><End>ż</End></CharacterRegion>
+      <CharacterRegion><Start>Ą</Start><End>Ą</End></CharacterRegion>
+      <CharacterRegion><Start>Ć</Start><End>Ć</End></CharacterRegion>
+      <CharacterRegion><Start>Ę</Start><End>Ę</End></CharacterRegion>
+      <CharacterRegion><Start>Ł</Start><End>Ł</End></CharacterRegion>
+      <CharacterRegion><Start>Ń</Start><End>Ń</End></CharacterRegion>
+      <CharacterRegion><Start>Ó</Start><End>Ó</End></CharacterRegion>
+      <CharacterRegion><Start>Ś</Start><End>Ś</End></CharacterRegion>
+      <CharacterRegion><Start>Ź</Start><End>Ź</End></CharacterRegion>
+      <CharacterRegion><Start>Ż</Start><End>Ż</End></CharacterRegion>
+    </CharacterRegions>
+  </Asset>
+</XnaContent>

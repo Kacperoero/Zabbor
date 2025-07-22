@@ -1,12 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Zabbor.ZabborBase.Entities;
 using Zabbor.ZabborBase.Enums;
-using Zabbor.ZabborBase.Inerfaces;
+using Zabbor.ZabborBase.Interfaces;
 
 namespace Zabbor.ZabborBase.World
 {
@@ -27,10 +25,15 @@ namespace Zabbor.ZabborBase.World
             PlaceNpcs();
         }
 
+        public Npc GetNpcAt(Point tilePosition)
+        {
+            return _npcs.FirstOrDefault(npc => npc.TilePosition == tilePosition);
+        }
+
         private void PlaceNpcs()
         {
-            _npcs.Add(new Npc(new Point(8, 8), Color.Yellow));
-            _npcs.Add(new Npc(new Point(15, 12), Color.Cyan));
+            _npcs.Add(new Npc(new Point(8, 8), Color.Yellow, "npc_yellow_greeting"));
+            _npcs.Add(new Npc(new Point(15, 12), Color.Cyan, "npc_cyan_sword_legend"));
         }
 
         public bool IsTileWalkable(Point tileCoordinates)

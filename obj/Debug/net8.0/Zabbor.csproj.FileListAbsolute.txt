@@ -30,3 +30,5 @@ D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\Zabbor.pdb
 D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\Zabbor.genruntimeconfig.cache
 D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\ref\Zabbor.dll
 D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\Zabbor.sourcelink.json
+d:\Apps\MonoGame\Zabbor\bin\Debug\net8.0\Content\dialog_font.xnb
+D:\Apps\MonoGame\Zabbor\bin\Debug\net8.0\Content\dialogues.json

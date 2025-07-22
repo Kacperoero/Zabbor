@@ -2,7 +2,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
-using Zabbor.ZabborBase.Inerfaces;
+using Zabbor.ZabborBase.Interfaces;
+using Zabbor.Managers;
 
 namespace Zabbor.ZabborBase
 {
@@ -18,6 +19,7 @@ namespace Zabbor.ZabborBase
         private float _timeToMove = 0.15f; // Czas na przejście jednego kafelka (w sekundach)
         private float _moveTimer = 0f;
         private IGameMap _map;
+        private Vector2 _facingDirection = new Vector2(0, 1);
 
         public Player(Vector2 position, IGameMap map)
         {
@@ -27,7 +29,7 @@ namespace Zabbor.ZabborBase
             _map = map; 
         }
 
-        public void Update(GameTime gameTime)
+        public string Update(GameTime gameTime)
         {
             if (_isMoving)
             {
@@ -44,6 +46,12 @@ namespace Zabbor.ZabborBase
             else
             {
                 KeyboardState kState = Keyboard.GetState();
+
+                if (kState.IsKeyDown(Keys.Space))
+                {
+                    return Interact();
+                }
+
                 Vector2 moveDirection = Vector2.Zero;
 
                 if (kState.IsKeyDown(Keys.W) || kState.IsKeyDown(Keys.Up)) moveDirection.Y = -1;
@@ -53,6 +61,7 @@ namespace Zabbor.ZabborBase
 
                 if (moveDirection != Vector2.Zero)
                 {
+                    _facingDirection = moveDirection;
                     Point currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
                     Point targetTile = new Point(currentTile.X + (int)moveDirection.X, currentTile.Y + (int)moveDirection.Y);
 
@@ -63,8 +72,23 @@ namespace Zabbor.ZabborBase
                     }
                 }
             }
-            
+
             _graphics.Position = Position;
+            return null;
+        }
+
+        private string Interact()
+        {
+            Point currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
+            Point targetTile = new Point(currentTile.X + (int)_facingDirection.X, currentTile.Y + (int)_facingDirection.Y);
+            
+            var npc = _map.GetNpcAt(targetTile);
+            if (npc != null)
+            {
+                return DialogueManager.GetDialogue(npc.DialogueId);
+            }
+            
+            return null;
         }
 
         public void Draw(SpriteBatch spriteBatch)

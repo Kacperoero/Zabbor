@@ -1,8 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Zabbor.Managers;
 using Zabbor.ZabborBase;
-using Zabbor.ZabborBase.Inerfaces;
+using Zabbor.ZabborBase.Interfaces;
+using Zabbor.ZabborBase.UI;
 using Zabbor.ZabborBase.World;
 
 namespace Zabbor
@@ -16,6 +18,8 @@ namespace Zabbor
         public const int TILE_SIZE = 32;
         private const int MAP_WIDTH = 25;
         private const int MAP_HEIGHT = 19;
+        private SpriteFont _dialogFont;
+        private DialogBox _activeDialog;
 
         public Game1()
         {
@@ -31,24 +35,42 @@ namespace Zabbor
             _graphics.ApplyChanges();
             base.Initialize();
         }
+        
+        public void ShowDialog(string text)
+        {
+            _activeDialog = new DialogBox(text, _dialogFont, GraphicsDevice);
+        }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             Placeholder.Create(GraphicsDevice);
-    
-            // Ładujemy konkretną planszę - "Board1"
+            _dialogFont = Content.Load<SpriteFont>("dialog_font");
+
+            DialogueManager.LoadDialogues();
             _currentBoard = new Board1(MAP_WIDTH, MAP_HEIGHT);
-    
+
             var playerPosition = new Vector2(12 * TILE_SIZE, 9 * TILE_SIZE);
             _player = new Player(playerPosition, _currentBoard);
         }
 
         protected override void Update(GameTime gameTime)
         {
+            if (_activeDialog != null)
+            {
+                if (Keyboard.GetState().IsKeyDown(Keys.Q))
+                {
+                    _activeDialog = null;
+                }
+                return;
+            }
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
-            _player.Update(gameTime);
+            string dialogToShow = _player.Update(gameTime);
+            if (dialogToShow != null)
+            {
+                ShowDialog(dialogToShow);
+            }
             base.Update(gameTime);
         }
 
@@ -58,6 +80,10 @@ namespace Zabbor
             _spriteBatch.Begin();
             _currentBoard.Draw(_spriteBatch);
             _player.Draw(_spriteBatch);
+            if (_activeDialog != null)
+            {
+                _activeDialog.Draw(_spriteBatch);
+            }
             _spriteBatch.End();
             base.Draw(gameTime);
         }

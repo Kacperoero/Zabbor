@@ -13,3 +13,10 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin dialog_font.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/build:dialog_font.spritefont
+
+#begin dialogues.json
+/copy:dialogues.json
