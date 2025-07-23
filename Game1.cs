@@ -33,6 +33,10 @@ namespace Zabbor
         private SpriteFont _dialogFont;
         private Dictionary<string, IGameMap> _maps;
         private string _currentMapId;
+        private InventoryScreen _inventoryScreen;
+        private bool _isInventoryOpen = false;
+        private KeyboardState _previousKeyboardState;
+
 
         public Game1()
         {
@@ -59,9 +63,9 @@ namespace Zabbor
             // Ładujemy tylko zasoby potrzebne od razu (dla menu)
             _dialogFont = Content.Load<SpriteFont>("dialog_font");
             _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport);
+            _inventoryScreen = new InventoryScreen(_dialogFont, GraphicsDevice);
         }
 
-        // Nowa metoda, która inicjalizuje wszystko potrzebne do rozgrywki
         private void StartGameplay()
         {
             Placeholder.Create(GraphicsDevice);
@@ -109,29 +113,64 @@ namespace Zabbor
             base.Update(gameTime);
         }
 
-        // Logika aktualizacji gry wydzielona do osobnej metody
         private void UpdateGameplay(GameTime gameTime)
         {
+            var kState = Keyboard.GetState();
+
+            // PRIORYTET 1: Jeśli otwarty jest ekwipunek
+            if (_isInventoryOpen)
+            {
+                // Zamykamy go po ponownym wciśnięciu "I"
+                if (kState.IsKeyDown(Keys.I) && _previousKeyboardState.IsKeyUp(Keys.I))
+                {
+                    _isInventoryOpen = false;
+                }
+                _previousKeyboardState = kState;
+                return; // Zatrzymujemy resztę logiki
+            }
+
+            // PRIORYTET 2: Jeśli otwarty jest dialog
             if (_activeDialog != null)
             {
-                if (Keyboard.GetState().IsKeyDown(Keys.Q)) _activeDialog = null;
-                return;
+                if (kState.IsKeyDown(Keys.Q))
+                {
+                    _activeDialog = null;
+                }
+                _previousKeyboardState = kState;
+                return; // Zatrzymujemy resztę logiki
             }
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape)) _currentState = GameState.MainMenu;
 
-            // Sprawdzamy co zwrócił gracz
+            // --- Poniższy kod wykona się tylko, jeśli żadne okno nie jest otwarte ---
+
+            // Otwieranie ekwipunku
+            if (kState.IsKeyDown(Keys.I) && _previousKeyboardState.IsKeyUp(Keys.I))
+            {
+                _isInventoryOpen = true;
+            }
+
+            // Powrót do menu głównego
+            if (kState.IsKeyDown(Keys.Escape))
+            {
+                _currentState = GameState.MainMenu;
+            }
+
+            // Aktualizacja gracza i jego akcji
             var playerResult = _player.Update(gameTime);
-            if (playerResult is string dialog) // Jeśli to string, pokaż dialog
+            if (playerResult is string dialog)
             {
                 ShowDialog(dialog);
             }
-            else if (playerResult is Warp warp) // Jeśli to Warp, zmień mapę
+            else if (playerResult is Warp warp)
             {
                 ChangeMap(warp);
             }
 
+            // Aktualizacja kamery
             var mapSizeInPixels = new Point(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
             _camera.Follow(_player.Position, mapSizeInPixels);
+
+            // Zawsze na końcu zapisujemy stan klawiatury
+            _previousKeyboardState = kState;
         }
 
         private void ChangeMap(Warp warp)
@@ -167,7 +206,6 @@ namespace Zabbor
             base.Draw(gameTime);
         }
 
-        // Logika rysowania gry wydzielona do osobnej metody
         private void DrawGameplay(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
@@ -179,6 +217,7 @@ namespace Zabbor
 
             _spriteBatch.Begin();
             if (_activeDialog != null) _activeDialog.Draw(_spriteBatch);
+            if (_isInventoryOpen) _inventoryScreen.Draw(_spriteBatch, _player.Inventory.GetItems());
             _spriteBatch.End();
         }
     }

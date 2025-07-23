@@ -15,6 +15,7 @@ namespace Zabbor.ZabborBase.World
         private readonly int _height;
         private readonly List<Npc> _npcs = [];
         private readonly List<Warp> _warps = [];
+        private readonly List<WorldItem> _worldItems = [];
 
         public Board2(int width, int height)
         {
@@ -23,16 +24,21 @@ namespace Zabbor.ZabborBase.World
             _tiles = new TileType[width, height];
             GenerateLayout();
             PlaceWarps();
+            PlaceNpcs();
+            PlaceItems();
         }
 
         private void GenerateLayout()
         {
-            // Inny układ dla drugiej mapy
+            // Uspójniony layout z ramką, jak w Board1
             for (int x = 0; x < _width; x++)
             {
                 for (int y = 0; y < _height; y++)
                 {
-                    _tiles[x, y] = TileType.Walkable;
+                    if (x == 0 || x == _width - 1 || y == 0 || y == _height - 1)
+                        _tiles[x, y] = TileType.Solid;
+                    else
+                        _tiles[x, y] = TileType.Walkable;
                 }
             }
             _tiles[10, 10] = TileType.Solid;
@@ -42,40 +48,29 @@ namespace Zabbor.ZabborBase.World
         private void PlaceWarps()
         {
             _warps.Clear();
-            // Portal powrotny z lewej krawędzi Board2 na prawą krawędź Board1
             _warps.Add(new Warp(new Point(0, 19), "Board1", new Point(49, 19)));
         }
+        
+        // Puste metody, gotowe na przyszłość
+        private void PlaceNpcs() { }
+        private void PlaceItems() { }
 
         public bool IsTileWalkable(Point tileCoordinates)
         {
-            // PRIORYTET 1: Sprawdź, czy pole jest portalem. Jeśli tak, zawsze można na nie wejść.
-            if (GetWarpAt(tileCoordinates) != null)
-            {
-                return true;
-            }
-
-            // PRIORYTET 2: Sprawdź granice mapy.
-            if (tileCoordinates.X < 0 || tileCoordinates.X >= _width ||
-                tileCoordinates.Y < 0 || tileCoordinates.Y >= _height)
-            {
-                return false;
-            }
-
-            // PRIORYTET 3: Sprawdź, czy na polu stoi NPC.
-            if (_npcs.Any(npc => npc.TilePosition == tileCoordinates))
-            {
-                return false;
-            }
-
-            // Na końcu sprawdź typ podłoża z mapy.
+            if (GetWarpAt(tileCoordinates) != null) return true;
+            if (tileCoordinates.X < 0 || tileCoordinates.X >= _width || tileCoordinates.Y < 0 || tileCoordinates.Y >= _height) return false;
+            if (_npcs.Any(npc => npc.TilePosition == tileCoordinates)) return false;
             return _tiles[tileCoordinates.X, tileCoordinates.Y] == TileType.Walkable;
         }
 
-        public Npc GetNpcAt(Point tilePosition) => null;
+        public Npc GetNpcAt(Point tilePosition) => _npcs.FirstOrDefault(npc => npc.TilePosition == tilePosition);
         public Warp GetWarpAt(Point tilePosition) => _warps.FirstOrDefault(w => w.SourceTile == tilePosition);
+        public WorldItem GetWorldItemAt(Point tilePosition) => _worldItems.FirstOrDefault(i => i.TilePosition == tilePosition);
+        public void RemoveWorldItemAt(Point tilePosition) => _worldItems.RemoveAll(i => i.TilePosition == tilePosition);
 
         public void Draw(SpriteBatch spriteBatch)
         {
+            // 1. Rysuj kafelki mapy
             for (int x = 0; x < _width; x++)
             {
                 for (int y = 0; y < _height; y++)
@@ -84,22 +79,27 @@ namespace Zabbor.ZabborBase.World
                     var currentTilePoint = new Point(x, y);
                     Color tileColor;
 
-                    // ---- NOWA LOGIKA KOLOROWANIA ----
                     if (GetWarpAt(currentTilePoint) != null)
-                    {
                         tileColor = Color.Purple;
-                    }
                     else if (_tiles[x, y] == TileType.Solid)
-                    {
                         tileColor = Color.DarkSlateGray;
-                    }
                     else
-                    {
                         tileColor = Color.CornflowerBlue;
-                    }
                     
                     spriteBatch.Draw(Placeholder.Texture, new Rectangle((int)tilePosition.X, (int)tilePosition.Y, Game1.TILE_SIZE, Game1.TILE_SIZE), tileColor);
                 }
+            }
+
+            // 2. Rysuj przedmioty
+            foreach (var item in _worldItems)
+            {
+                item.Draw(spriteBatch);
+            }
+
+            // 3. Rysuj NPC
+            foreach (var npc in _npcs)
+            {
+                npc.Draw(spriteBatch);
             }
         }
     }

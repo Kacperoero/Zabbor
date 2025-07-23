@@ -11,5 +11,7 @@ namespace Zabbor.ZabborBase.Interfaces
         void Draw(SpriteBatch spriteBatch);
         Npc GetNpcAt(Point tilePosition);
         Warp GetWarpAt(Point tilePosition);
+        WorldItem GetWorldItemAt(Point tilePosition);
+        void RemoveWorldItemAt(Point tilePosition);
     }
 }

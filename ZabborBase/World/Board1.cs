@@ -13,8 +13,9 @@ namespace Zabbor.ZabborBase.World
         private readonly TileType[,] _tiles;
         private readonly int _width;
         private readonly int _height;
-        private readonly List<Npc> _npcs = new List<Npc>();
-        private readonly List<Warp> _warps = new List<Warp>();
+        private readonly List<Npc> _npcs = [];
+        private readonly List<Warp> _warps = [];
+        private readonly List<WorldItem> _worldItems = [];
 
         public Board1(int width, int height)
         {
@@ -25,6 +26,7 @@ namespace Zabbor.ZabborBase.World
             GenerateLayout();
             PlaceNpcs();
             PlaceWarps();
+            PlaceItems();
         }
 
         private void PlaceWarps()
@@ -53,6 +55,15 @@ namespace Zabbor.ZabborBase.World
             _npcs.Add(new Npc(new Point(8, 8), Color.Yellow, "npc_yellow_greeting"));
             _npcs.Add(new Npc(new Point(15, 12), Color.Cyan, "npc_cyan_sword_legend"));
         }
+
+        private void PlaceItems()
+        {
+            _worldItems.Add(new WorldItem(new Point(10, 15), "potion_health_small"));
+            _worldItems.Add(new WorldItem(new Point(20, 22), "key_rusty"));
+        }
+
+        public WorldItem GetWorldItemAt(Point tilePosition) => _worldItems.FirstOrDefault(i => i.TilePosition == tilePosition);
+        public void RemoveWorldItemAt(Point tilePosition) => _worldItems.RemoveAll(i => i.TilePosition == tilePosition);
 
         public bool IsTileWalkable(Point tileCoordinates)
         {
@@ -106,6 +117,7 @@ namespace Zabbor.ZabborBase.World
 
         public void Draw(SpriteBatch spriteBatch)
         {
+            // 1. Rysuj kafelki mapy
             for (int x = 0; x < _width; x++)
             {
                 for (int y = 0; y < _height; y++)
@@ -114,28 +126,25 @@ namespace Zabbor.ZabborBase.World
                     var currentTilePoint = new Point(x, y);
                     Color tileColor;
 
-                    // ---- NOWA LOGIKA KOLOROWANIA ----
-                    // Najpierw sprawdzamy, czy pole jest portalem
                     if (GetWarpAt(currentTilePoint) != null)
-                    {
-                        tileColor = Color.Purple; // Kolor dla portali
-                    }
-                    // Jeśli nie, sprawdzamy, czy jest ścianą
+                        tileColor = Color.Purple;
                     else if (_tiles[x, y] == TileType.Solid)
-                    {
-                        tileColor = new Color(139, 69, 19); // Brązowy dla przeszkód
-                    }
-                    // W przeciwnym razie jest to zwykłe pole
+                        tileColor = new Color(139, 69, 19); // Brązowy dla Board1
                     else
-                    {
-                        tileColor = Color.DarkGreen; // Domyślny kolor dla "chodnika"
-                    }
+                        tileColor = Color.DarkGreen; // Ciemnozielony dla Board1
                     
                     spriteBatch.Draw(Placeholder.Texture, new Rectangle((int)tilePosition.X, (int)tilePosition.Y, Game1.TILE_SIZE, Game1.TILE_SIZE), tileColor);
                 }
             }
 
-            // Rysowanie NPC pozostaje bez zmian
+            // 2. Rysuj przedmioty leżące na ziemi
+            // ----> UPEWNIJ SIĘ, ŻE TA PĘTLA ISTNIEJE <----
+            foreach (var item in _worldItems)
+            {
+                item.Draw(spriteBatch);
+            }
+
+            // 3. Rysuj NPC (na wierzchu)
             foreach (var npc in _npcs)
             {
                 npc.Draw(spriteBatch);

@@ -4,6 +4,8 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using Zabbor.ZabborBase.Interfaces;
 using Zabbor.Managers;
+using Zabbor.ZabborBase.Systems;
+using Zabbor.ZabborBase.Managers;
 
 namespace Zabbor.ZabborBase
 {
@@ -20,6 +22,7 @@ namespace Zabbor.ZabborBase
         private float _moveTimer = 0f;
         private IGameMap _map;
         private Vector2 _facingDirection = new Vector2(0, 1);
+        public Inventory Inventory { get; private set; }
 
         public Player(Vector2 position, IGameMap map)
         {
@@ -27,6 +30,7 @@ namespace Zabbor.ZabborBase
             _targetPosition = position;
             _graphics = new Placeholder(position, new Point(Game1.TILE_SIZE), Color.White);
             _map = map; 
+            Inventory = new Inventory();
         }
 
         public void SetPosition(Vector2 newPosition, IGameMap newMap)
@@ -95,6 +99,14 @@ namespace Zabbor.ZabborBase
         {
             Point currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
             Point targetTile = new Point(currentTile.X + (int)_facingDirection.X, currentTile.Y + (int)_facingDirection.Y);
+            
+            var item = _map.GetWorldItemAt(targetTile);
+            if (item != null)
+            {
+                Inventory.AddItem(item.ItemId);
+                _map.RemoveWorldItemAt(targetTile);
+                return $"{ItemManager.GetItem(item.ItemId).Name} został podniesiony.";
+            }
             
             var npc = _map.GetNpcAt(targetTile);
             if (npc != null)
