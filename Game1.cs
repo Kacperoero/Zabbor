@@ -8,6 +8,7 @@ using Zabbor.ZabborBase.Interfaces;
 using Zabbor.ZabborBase.UI;
 using Zabbor.ZabborBase.World;
 using Zabbor.ZabborBase.Enums;
+using System.Collections.Generic;
 
 namespace Zabbor
 {
@@ -22,7 +23,6 @@ namespace Zabbor
         
         // ---- Pola dla stanu Gameplay ----
         private Player _player;
-        private IGameMap _currentBoard; 
         private Camera _camera;
         private DialogBox _activeDialog;
         
@@ -31,6 +31,8 @@ namespace Zabbor
         private const int MAP_WIDTH = 50;
         private const int MAP_HEIGHT = 40;
         private SpriteFont _dialogFont;
+        private Dictionary<string, IGameMap> _maps;
+        private string _currentMapId;
 
         public Game1()
         {
@@ -62,14 +64,20 @@ namespace Zabbor
         // Nowa metoda, która inicjalizuje wszystko potrzebne do rozgrywki
         private void StartGameplay()
         {
-            // Ładujemy zasoby potrzebne tylko do gry
             Placeholder.Create(GraphicsDevice);
             DialogueManager.LoadDialogues();
-
             _camera = new Camera(GraphicsDevice.Viewport);
-            _currentBoard = new Board1(MAP_WIDTH, MAP_HEIGHT);
-            var playerPosition = new Vector2(25 * TILE_SIZE, 20 * TILE_SIZE); 
-            _player = new Player(playerPosition, _currentBoard);
+
+            // Inicjalizujemy wszystkie mapy
+            _maps = new Dictionary<string, IGameMap>
+            {
+                { "Board1", new Board1(MAP_WIDTH, MAP_HEIGHT) },
+                { "Board2", new Board2(MAP_WIDTH, MAP_HEIGHT) }
+            };
+            _currentMapId = "Board1"; // Zaczynamy od pierwszej mapy
+
+            var playerPosition = new Vector2(12 * TILE_SIZE, 9 * TILE_SIZE);
+            _player = new Player(playerPosition, _maps[_currentMapId]);
         }
 
         protected override void Update(GameTime gameTime)
@@ -109,13 +117,29 @@ namespace Zabbor
                 if (Keyboard.GetState().IsKeyDown(Keys.Q)) _activeDialog = null;
                 return;
             }
-            if (Keyboard.GetState().IsKeyDown(Keys.Escape)) _currentState = GameState.MainMenu; // Wróć do menu
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape)) _currentState = GameState.MainMenu;
 
-            string dialogToShow = _player.Update(gameTime);
-            if (dialogToShow != null) ShowDialog(dialogToShow);
+            // Sprawdzamy co zwrócił gracz
+            var playerResult = _player.Update(gameTime);
+            if (playerResult is string dialog) // Jeśli to string, pokaż dialog
+            {
+                ShowDialog(dialog);
+            }
+            else if (playerResult is Warp warp) // Jeśli to Warp, zmień mapę
+            {
+                ChangeMap(warp);
+            }
 
             var mapSizeInPixels = new Point(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
             _camera.Follow(_player.Position, mapSizeInPixels);
+        }
+
+        private void ChangeMap(Warp warp)
+        {
+            _currentMapId = warp.DestinationMapId;
+            var newMap = _maps[_currentMapId];
+            var newPosition = new Vector2(warp.DestinationTile.X * TILE_SIZE, warp.DestinationTile.Y * TILE_SIZE);
+            _player.SetPosition(newPosition, newMap);
         }
 
         public void ShowDialog(string text)
@@ -149,7 +173,7 @@ namespace Zabbor
             GraphicsDevice.Clear(Color.Black);
 
             _spriteBatch.Begin(transformMatrix: _camera.Transform);
-            _currentBoard.Draw(_spriteBatch);
+            _maps[_currentMapId].Draw(_spriteBatch);
             _player.Draw(_spriteBatch);
             _spriteBatch.End();
 

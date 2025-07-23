@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Zabbor.ZabborBase.Entities;
+using Zabbor.ZabborBase.World;
 
 namespace Zabbor.ZabborBase.Interfaces
 {
@@ -9,5 +10,6 @@ namespace Zabbor.ZabborBase.Interfaces
         bool IsTileWalkable(Point tileCoordinates);
         void Draw(SpriteBatch spriteBatch);
         Npc GetNpcAt(Point tilePosition);
+        Warp GetWarpAt(Point tilePosition);
     }
 }

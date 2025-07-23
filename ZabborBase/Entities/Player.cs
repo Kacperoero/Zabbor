@@ -29,7 +29,16 @@ namespace Zabbor.ZabborBase
             _map = map; 
         }
 
-        public string Update(GameTime gameTime)
+        public void SetPosition(Vector2 newPosition, IGameMap newMap)
+        {
+            Position = newPosition;
+            _targetPosition = newPosition;
+            _graphics.Position = newPosition;
+            _map = newMap;
+            _isMoving = false; // Zapewnia, że gracz może się ruszyć od razu
+        }
+
+        public object Update(GameTime gameTime)
         {
             if (_isMoving)
             {
@@ -41,6 +50,11 @@ namespace Zabbor.ZabborBase
                     _isMoving = false;
                     _moveTimer = 0f;
                     Position = _targetPosition;
+
+                    // SPRAWDŹ CZY STOIMY NA PORTALU PO ZAKOŃCZENIU RUCHU
+                    var currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
+                    var warp = _map.GetWarpAt(currentTile);
+                    if (warp != null) return warp; // Zwróć obiekt portalu
                 }
             }
             else
@@ -77,7 +91,7 @@ namespace Zabbor.ZabborBase
             return null;
         }
 
-        private string Interact()
+        private object Interact()
         {
             Point currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
             Point targetTile = new Point(currentTile.X + (int)_facingDirection.X, currentTile.Y + (int)_facingDirection.Y);

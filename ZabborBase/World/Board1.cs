@@ -14,6 +14,7 @@ namespace Zabbor.ZabborBase.World
         private readonly int _width;
         private readonly int _height;
         private readonly List<Npc> _npcs = new List<Npc>();
+        private readonly List<Warp> _warps = new List<Warp>();
 
         public Board1(int width, int height)
         {
@@ -23,6 +24,23 @@ namespace Zabbor.ZabborBase.World
 
             GenerateLayout();
             PlaceNpcs();
+            PlaceWarps();
+        }
+
+        private void PlaceWarps()
+        {
+            _warps.Clear();
+            // 1. Przejście przy krawędzi mapy
+
+            _warps.Add(new Warp(new Point(49, 19), "Board2", new Point(0, 19)));
+
+            // 2. Przejście typu "drzwi" wewnątrz mapy
+            _warps.Add(new Warp(new Point(18, 15), "Board2", new Point(10, 11)));
+        }
+
+        public Warp GetWarpAt(Point tilePosition)
+        {
+            return _warps.FirstOrDefault(w => w.SourceTile == tilePosition);
         }
 
         public Npc GetNpcAt(Point tilePosition)
@@ -38,19 +56,26 @@ namespace Zabbor.ZabborBase.World
 
         public bool IsTileWalkable(Point tileCoordinates)
         {
+            // PRIORYTET 1: Sprawdź, czy pole jest portalem. Jeśli tak, zawsze można na nie wejść.
+            if (GetWarpAt(tileCoordinates) != null)
+            {
+                return true;
+            }
+
+            // PRIORYTET 2: Sprawdź granice mapy.
             if (tileCoordinates.X < 0 || tileCoordinates.X >= _width ||
                 tileCoordinates.Y < 0 || tileCoordinates.Y >= _height)
             {
                 return false;
             }
 
-            // ZMODYFIKOWANA LOGIKA KOLIZJI
-            // Sprawdź, czy na docelowym polu stoi jakiś NPC
+            // PRIORYTET 3: Sprawdź, czy na polu stoi NPC.
             if (_npcs.Any(npc => npc.TilePosition == tileCoordinates))
             {
                 return false;
             }
 
+            // Na końcu sprawdź typ podłoża z mapy.
             return _tiles[tileCoordinates.X, tileCoordinates.Y] == TileType.Walkable;
         }
 
@@ -86,14 +111,31 @@ namespace Zabbor.ZabborBase.World
                 for (int y = 0; y < _height; y++)
                 {
                     var tilePosition = new Vector2(x * Game1.TILE_SIZE, y * Game1.TILE_SIZE);
-                    var tileColor = _tiles[x, y] == TileType.Solid ? new Color(139, 69, 19) : Color.DarkGreen;
+                    var currentTilePoint = new Point(x, y);
+                    Color tileColor;
 
-                    spriteBatch.Draw(Placeholder.Texture,
-                        new Rectangle((int)tilePosition.X, (int)tilePosition.Y, Game1.TILE_SIZE, Game1.TILE_SIZE),
-                        tileColor);
+                    // ---- NOWA LOGIKA KOLOROWANIA ----
+                    // Najpierw sprawdzamy, czy pole jest portalem
+                    if (GetWarpAt(currentTilePoint) != null)
+                    {
+                        tileColor = Color.Purple; // Kolor dla portali
+                    }
+                    // Jeśli nie, sprawdzamy, czy jest ścianą
+                    else if (_tiles[x, y] == TileType.Solid)
+                    {
+                        tileColor = new Color(139, 69, 19); // Brązowy dla przeszkód
+                    }
+                    // W przeciwnym razie jest to zwykłe pole
+                    else
+                    {
+                        tileColor = Color.DarkGreen; // Domyślny kolor dla "chodnika"
+                    }
+                    
+                    spriteBatch.Draw(Placeholder.Texture, new Rectangle((int)tilePosition.X, (int)tilePosition.Y, Game1.TILE_SIZE, Game1.TILE_SIZE), tileColor);
                 }
             }
-            // NOWA PĘTLA DO RYSOWANIA NPC
+
+            // Rysowanie NPC pozostaje bez zmian
             foreach (var npc in _npcs)
             {
                 npc.Draw(spriteBatch);
