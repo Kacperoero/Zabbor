@@ -27,7 +27,7 @@ namespace Zabbor.ZabborBase.UI
             spriteBatch.Draw(Placeholder.Texture, _panel, Color.DarkBlue * 0.9f);
 
             var position = new Vector2(_panel.X + 20, _panel.Y + 20);
-            spriteBatch.DrawString(_font, "Ekwipunek (Nacisnij I aby zamknac)", position, Color.White);
+            spriteBatch.DrawString(_font, "Ekwipunek", position, Color.White);
             position.Y += 40;
 
             if (items.Count == 0)

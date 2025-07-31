@@ -202,8 +202,11 @@ namespace Zabbor
 
             if (_isInventoryOpen)
             {
-                if (kState.IsKeyDown(Keys.I) && _previousKeyboardState.IsKeyUp(Keys.I))
+                if ((kState.IsKeyDown(Keys.E) && _previousKeyboardState.IsKeyUp(Keys.E)) || 
+                    (kState.IsKeyDown(Keys.Q) && _previousKeyboardState.IsKeyUp(Keys.Q)))
+                {
                     _isInventoryOpen = false;
+                }
                 
                 _previousKeyboardState = kState;
                 return;
@@ -218,7 +221,7 @@ namespace Zabbor
                 return;
             }
             
-            if (kState.IsKeyDown(Keys.I) && _previousKeyboardState.IsKeyUp(Keys.I))
+            if (kState.IsKeyDown(Keys.E) && _previousKeyboardState.IsKeyUp(Keys.E))
             {
                 _isInventoryOpen = true;
             }
