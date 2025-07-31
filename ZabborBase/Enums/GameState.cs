@@ -4,6 +4,7 @@ namespace Zabbor.ZabborBase.Enums
     {
         MainMenu,
         NewGame,
+        ResumeGame,
         ShowLoadScreen,
         ShowSaveScreen,
         Gameplay,

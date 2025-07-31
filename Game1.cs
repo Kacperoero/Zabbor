@@ -41,8 +41,8 @@ namespace Zabbor
         private string _currentMapId;
         private InventoryScreen _inventoryScreen;
         private bool _isInventoryOpen = false;
-        private KeyboardState _previousKeyboardState;
         private Dictionary<string, List<Point>> _removedItemsByMap = new Dictionary<string, List<Point>>();
+        private bool _isGameInProgress = false;
 
         public Game1()
         {
@@ -64,7 +64,7 @@ namespace Zabbor
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _dialogFont = Content.Load<SpriteFont>("dialog_font");
-            _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport);
+            _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, false);
             _inventoryScreen = new InventoryScreen(_dialogFont, GraphicsDevice);
         }
 
@@ -72,6 +72,7 @@ namespace Zabbor
         {
             _removedItemsByMap.Clear();
             InitializeGameplay(null);
+            _isGameInProgress = true;
         }
 
         // POPRAWKA: Ta metoda przyjmuje teraz slotIndex
@@ -79,6 +80,7 @@ namespace Zabbor
         {
             var saveData = SaveManager.LoadGame(slotIndex);
             InitializeGameplay(saveData);
+            _isGameInProgress = true;
         }
 
         private void InitializeGameplay(SaveData saveData)
@@ -147,27 +149,31 @@ namespace Zabbor
 
         protected override void Update(GameTime gameTime)
         {
+            InputManager.Update();
+
             switch (_currentState)
             {
                 case GameState.MainMenu:
                     var nextState = _mainMenuScreen.Update();
                     if (nextState != GameState.MainMenu)
                     {
-                        // POPRAWKA: Uzupełniono logikę dla NewGame
                         if (nextState == GameState.NewGame)
                         {
                             StartNewGame();
                             _currentState = GameState.Gameplay;
                         }
+                        else if (nextState == GameState.ResumeGame)
+                        {
+                            _currentState = GameState.Gameplay;
+                        }
                         else if (nextState == GameState.ShowLoadScreen)
                         {
-                            _saveLoadScreen = new SaveLoadScreen(_dialogFont, GraphicsDevice.Viewport, SaveLoadMode.Load, Keyboard.GetState());
+                            _saveLoadScreen = new SaveLoadScreen(_dialogFont, GraphicsDevice.Viewport, SaveLoadMode.Load);
                             _currentState = nextState;
                         }
                         else if (nextState == GameState.Exit) Exit();
                         
-                        // Odśwież menu (np. żeby pojawiła się opcja "Wczytaj"), jeśli wrócimy do niego później
-                         _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport);
+                        _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, _isGameInProgress);
                     }
                     break;
 
@@ -186,6 +192,8 @@ namespace Zabbor
                     else if (selectedSlot == -1)
                     {
                         _currentState = (_currentState == GameState.ShowSaveScreen) ? GameState.Gameplay : GameState.MainMenu;
+                        if (_currentState == GameState.MainMenu)
+                            _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, _isGameInProgress);
                     }
                     break;
 
@@ -198,42 +206,41 @@ namespace Zabbor
 
         private void UpdateGameplay(GameTime gameTime)
         {
-            var kState = Keyboard.GetState();
-
             if (_isInventoryOpen)
             {
-                if ((kState.IsKeyDown(Keys.E) && _previousKeyboardState.IsKeyUp(Keys.E)) || 
-                    (kState.IsKeyDown(Keys.Q) && _previousKeyboardState.IsKeyUp(Keys.Q)))
+                // Używamy WasKeyPressed dla jednorazowego wciśnięcia
+                if (InputManager.WasKeyPressed(Keys.E) || InputManager.WasKeyPressed(Keys.Q))
                 {
                     _isInventoryOpen = false;
                 }
-                
-                _previousKeyboardState = kState;
                 return;
             }
 
             if (_activeDialog != null)
             {
-                if (kState.IsKeyDown(Keys.Q) && _previousKeyboardState.IsKeyUp(Keys.Q))
+                if (InputManager.WasKeyPressed(Keys.Q))
+                {
                     _activeDialog = null;
-
-                _previousKeyboardState = kState;
+                }
                 return;
             }
             
-            if (kState.IsKeyDown(Keys.E) && _previousKeyboardState.IsKeyUp(Keys.E))
+            if (InputManager.WasKeyPressed(Keys.I)) // To można usunąć, ale zostawiam jako przykład
             {
                 _isInventoryOpen = true;
             }
-            if (kState.IsKeyDown(Keys.Escape))
+            else if (InputManager.WasKeyPressed(Keys.E)) // Poprawione otwieranie ekwipunku
+            {
+                _isInventoryOpen = true;
+            }
+            else if (InputManager.WasKeyPressed(Keys.Escape))
             {
                 _currentState = GameState.MainMenu;
-                // TWORZYMY MENU NA NOWO, ABY ODŚWIEŻYĆ LISTĘ OPCJI
-                _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport);
+                _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, _isGameInProgress);
             }
-            else if (kState.IsKeyDown(Keys.F5) && _previousKeyboardState.IsKeyUp(Keys.F5))
+            else if (InputManager.WasKeyPressed(Keys.F5))
             {
-                _saveLoadScreen = new SaveLoadScreen(_dialogFont, GraphicsDevice.Viewport, SaveLoadMode.Save, kState);
+                _saveLoadScreen = new SaveLoadScreen(_dialogFont, GraphicsDevice.Viewport, SaveLoadMode.Save);
                 _currentState = GameState.ShowSaveScreen;
             }
             else
@@ -258,8 +265,6 @@ namespace Zabbor
             
             var mapSizeInPixels = new Point(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
             _camera.Follow(_player.Position, mapSizeInPixels);
-            
-            _previousKeyboardState = kState;
         }
 
         private void ChangeMap(Warp warp)

@@ -6,6 +6,7 @@ using Zabbor.ZabborBase.Enums;
 using Zabbor.ZabborBase.Managers;
 using System.Collections.Generic;
 using System.Linq;
+using Zabbor.Core; // Upewnij się, że ten using jest dodany
 
 namespace Zabbor.ZabborBase.UI // Użyj swojej przestrzeni nazw
 {
@@ -13,30 +14,40 @@ namespace Zabbor.ZabborBase.UI // Użyj swojej przestrzeni nazw
     {
         private SpriteFont _font;
         private Viewport _viewport;
-        private List<string> _menuItems = new List<string> { "Rozpocznij Gre", "Wyjdz" };
+        
+        // Lista jest inicjalizowana jako pusta. Wypełni ją konstruktor.
+        private readonly List<string> _menuItems = new List<string>();
         private int _selectedIndex = 0;
-        private KeyboardState _previousKeyboardState;
 
-        public MainMenuScreen(SpriteFont font, Viewport viewport)
+        public MainMenuScreen(SpriteFont font, Viewport viewport, bool isGameInProgress)
         {
             _font = font;
             _viewport = viewport;
+
+            // Logika budowania listy opcji od zera
+            if (isGameInProgress)
+            {
+                _menuItems.Add("Wróć do gry");
+            }
+            
+            _menuItems.Add("Nowa Gra");
+
+            // Sprawdzamy, czy istnieje JAKIKOLWIEK plik zapisu od 0 do 9
             if (Enumerable.Range(0, 10).Any(i => SaveManager.SaveFileExists(i)))
             {
-                _menuItems.Insert(1, "Wczytaj Gre");
+                _menuItems.Add("Wczytaj Grę");
             }
+
+            _menuItems.Add("Wyjdź");
         }
 
         public GameState Update()
         {
-            var kState = Keyboard.GetState();
-
-            // Obsługa strzałek w dół i w górę
-            if (kState.IsKeyDown(Keys.Down) && _previousKeyboardState.IsKeyUp(Keys.Down))
+            if (InputManager.WasKeyPressed(Keys.Down))
             {
                 _selectedIndex = (_selectedIndex + 1) % _menuItems.Count;
             }
-            if (kState.IsKeyDown(Keys.Up) && _previousKeyboardState.IsKeyUp(Keys.Up))
+            if (InputManager.WasKeyPressed(Keys.Up))
             {
                 _selectedIndex--;
                 if (_selectedIndex < 0)
@@ -45,25 +56,23 @@ namespace Zabbor.ZabborBase.UI // Użyj swojej przestrzeni nazw
                 }
             }
 
-            // Obsługa klawisza Enter
-            if (kState.IsKeyDown(Keys.Enter) && _previousKeyboardState.IsKeyUp(Keys.Enter))
+            if (InputManager.WasKeyPressed(Keys.Enter))
             {
                 string selectedItem = _menuItems[_selectedIndex];
                 switch (selectedItem)
                 {
-                    case "Rozpocznij Gre": return GameState.NewGame;
-                    case "Wczytaj Gre": return GameState.ShowLoadScreen;
-                    case "Wyjdz": return GameState.Exit;
+                    case "Wróć do gry": return GameState.ResumeGame;
+                    case "Nowa Gra": return GameState.NewGame;
+                    case "Wczytaj Grę": return GameState.ShowLoadScreen;
+                    case "Wyjdź": return GameState.Exit;
                 }
             }
-            
-            _previousKeyboardState = kState;
             return GameState.MainMenu;
         }
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            string title = "Zabbor"; // Zmieniony tytuł
+            string title = "Zabbor";
             var titlePosition = new Vector2(
                 _viewport.Width / 2f - _font.MeasureString(title).X / 2f,
                 _viewport.Height / 3f);

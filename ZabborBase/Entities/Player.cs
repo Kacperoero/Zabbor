@@ -5,7 +5,8 @@ using System;
 using Zabbor.ZabborBase.Interfaces;
 using Zabbor.ZabborBase.Managers;
 using Zabbor.ZabborBase.Systems;
-using Zabbor.Managers; // Dodany dla WorldItem
+using Zabbor.Managers;
+using Zabbor.Core; // Dodany dla WorldItem
 
 namespace Zabbor.ZabborBase
 {
@@ -20,9 +21,6 @@ namespace Zabbor.ZabborBase
         private float _moveTimer = 0f;
         private IGameMap _map;
         private Vector2 _facingDirection = new Vector2(0, 1);
-        
-        // NOWE POLE do poprawnej obsługi klawiszy
-        private KeyboardState _previousKeyboardState;
 
 
         public Player(Vector2 position, IGameMap map)
@@ -63,29 +61,26 @@ namespace Zabbor.ZabborBase
                     var warp = _map.GetWarpAt(currentTile);
                     if (warp != null)
                     {
-                        _previousKeyboardState = kState;
                         return warp;
                     }
                 }
             }
             else
             {
-                // POPRAWKA: Sprawdzamy jednorazowe wciśnięcie Spacji
-                if (kState.IsKeyDown(Keys.Space) && _previousKeyboardState.IsKeyUp(Keys.Space))
+                if (InputManager.WasKeyPressed(Keys.Space))
                 {
                     var interactionResult = Interact();
                     if (interactionResult != null)
                     {
-                        _previousKeyboardState = kState;
                         return interactionResult;
                     }
                 }
 
                 Vector2 moveDirection = Vector2.Zero;
-                if (kState.IsKeyDown(Keys.W) || kState.IsKeyDown(Keys.Up)) moveDirection.Y = -1;
-                else if (kState.IsKeyDown(Keys.S) || kState.IsKeyDown(Keys.Down)) moveDirection.Y = 1;
-                else if (kState.IsKeyDown(Keys.A) || kState.IsKeyDown(Keys.Left)) moveDirection.X = -1;
-                else if (kState.IsKeyDown(Keys.D) || kState.IsKeyDown(Keys.Right)) moveDirection.X = 1;
+                if (InputManager.IsKeyDown(Keys.W) || InputManager.IsKeyDown(Keys.Up)) moveDirection.Y = -1;
+                else if (InputManager.IsKeyDown(Keys.S) || InputManager.IsKeyDown(Keys.Down)) moveDirection.Y = 1;
+                else if (InputManager.IsKeyDown(Keys.A) || InputManager.IsKeyDown(Keys.Left)) moveDirection.X = -1;
+                else if (InputManager.IsKeyDown(Keys.D) || InputManager.IsKeyDown(Keys.Right)) moveDirection.X = 1;
 
                 if (moveDirection != Vector2.Zero)
                 {
@@ -102,7 +97,6 @@ namespace Zabbor.ZabborBase
             }
             
             _graphics.Position = Position;
-            _previousKeyboardState = kState;
             return null;
         }
         
