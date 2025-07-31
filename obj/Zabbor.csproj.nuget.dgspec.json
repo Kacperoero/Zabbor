@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "d:\\Apps\\MonoGame\\Zabbor\\Zabbor.csproj": {}
+    "D:\\Apps\\MonoGame\\Zabbor\\Zabbor.csproj": {}
   },
   "projects": {
-    "d:\\Apps\\MonoGame\\Zabbor\\Zabbor.csproj": {
+    "D:\\Apps\\MonoGame\\Zabbor\\Zabbor.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\Apps\\MonoGame\\Zabbor\\Zabbor.csproj",
+        "projectUniqueName": "D:\\Apps\\MonoGame\\Zabbor\\Zabbor.csproj",
         "projectName": "Zabbor",
-        "projectPath": "d:\\Apps\\MonoGame\\Zabbor\\Zabbor.csproj",
+        "projectPath": "D:\\Apps\\MonoGame\\Zabbor\\Zabbor.csproj",
         "packagesPath": "C:\\Users\\TECH KOM INFO\\.nuget\\packages\\",
-        "outputPath": "d:\\Apps\\MonoGame\\Zabbor\\obj\\",
+        "outputPath": "D:\\Apps\\MonoGame\\Zabbor\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\TECH KOM INFO\\AppData\\Roaming\\NuGet\\NuGet.Config"

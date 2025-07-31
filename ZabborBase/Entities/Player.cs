@@ -39,7 +39,7 @@ namespace Zabbor.ZabborBase
             _targetPosition = newPosition;
             _graphics.Position = newPosition;
             _map = newMap;
-            _isMoving = false; // Zapewnia, że gracz może się ruszyć od razu
+            _isMoving = false;
         }
 
         public object Update(GameTime gameTime)
@@ -49,29 +49,31 @@ namespace Zabbor.ZabborBase
                 _moveTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
                 float progress = Math.Min(_moveTimer / _timeToMove, 1.0f);
                 Position = Vector2.Lerp(Position, _targetPosition, progress);
+                
                 if (progress >= 1.0f)
                 {
                     _isMoving = false;
                     _moveTimer = 0f;
                     Position = _targetPosition;
 
-                    // SPRAWDŹ CZY STOIMY NA PORTALU PO ZAKOŃCZENIU RUCHU
+                    // Sprawdzamy tylko portale po zakończeniu ruchu
                     var currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
                     var warp = _map.GetWarpAt(currentTile);
-                    if (warp != null) return warp; // Zwróć obiekt portalu
+                    if (warp != null) return warp;
                 }
             }
             else
             {
-                KeyboardState kState = Keyboard.GetState();
-
+                var kState = Keyboard.GetState();
+                
+                // Klawisz Spacji obsługuje teraz obie interakcje
                 if (kState.IsKeyDown(Keys.Space))
                 {
                     return Interact();
                 }
 
+                // Logika ruchu pozostaje bez zmian
                 Vector2 moveDirection = Vector2.Zero;
-
                 if (kState.IsKeyDown(Keys.W) || kState.IsKeyDown(Keys.Up)) moveDirection.Y = -1;
                 else if (kState.IsKeyDown(Keys.S) || kState.IsKeyDown(Keys.Down)) moveDirection.Y = 1;
                 else if (kState.IsKeyDown(Keys.A) || kState.IsKeyDown(Keys.Left)) moveDirection.X = -1;
@@ -90,24 +92,26 @@ namespace Zabbor.ZabborBase
                     }
                 }
             }
-
+            
             _graphics.Position = Position;
             return null;
         }
-
+        
         private object Interact()
         {
-            Point currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
-            Point targetTile = new Point(currentTile.X + (int)_facingDirection.X, currentTile.Y + (int)_facingDirection.Y);
+            var currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
             
-            var item = _map.GetWorldItemAt(targetTile);
+            // PRIORYTET 1: Sprawdź, czy na polu, na którym STOIMY, jest przedmiot
+            var item = _map.GetWorldItemAt(currentTile);
             if (item != null)
             {
                 Inventory.AddItem(item.ItemId);
-                _map.RemoveWorldItemAt(targetTile);
+                _map.RemoveWorldItemAt(currentTile);
                 return $"{ItemManager.GetItem(item.ItemId).Name} został podniesiony.";
             }
-            
+
+            // PRIORYTET 2: Jeśli nie, sprawdź, czy PRZED nami jest NPC
+            var targetTile = new Point(currentTile.X + (int)_facingDirection.X, currentTile.Y + (int)_facingDirection.Y);
             var npc = _map.GetNpcAt(targetTile);
             if (npc != null)
             {

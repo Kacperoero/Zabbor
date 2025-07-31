@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PipelineBuildEvent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <SourceFile>d:/Apps/MonoGame/Zabbor/Content/dialog_font.spritefont</SourceFile>
+  <SourceFile>D:/Apps/MonoGame/Zabbor/Content/dialog_font.spritefont</SourceFile>
   <SourceTime>2025-07-22T10:10:59.3676302+02:00</SourceTime>
-  <DestFile>d:/Apps/MonoGame/Zabbor/Content/bin/DesktopGL/Content/dialog_font.xnb</DestFile>
-  <DestTime>2025-07-22T11:51:33.5632386+02:00</DestTime>
+  <DestFile>D:/Apps/MonoGame/Zabbor/Content/bin/DesktopGL/Content/dialog_font.xnb</DestFile>
+  <DestTime>2025-07-31T11:57:32.2920391+02:00</DestTime>
   <Importer>FontDescriptionImporter</Importer>
   <ImporterTime>2025-06-02T12:31:02+02:00</ImporterTime>
   <Processor>FontDescriptionProcessor</Processor>

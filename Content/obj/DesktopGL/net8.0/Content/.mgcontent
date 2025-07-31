@@ -4,7 +4,7 @@
   <Platform>DesktopGL</Platform>
   <Config />
   <SourceFiles>
-    <File>d:/Apps/MonoGame/Zabbor/Content/dialog_font.spritefont</File>
+    <File>D:/Apps/MonoGame/Zabbor/Content/dialog_font.spritefont</File>
   </SourceFiles>
   <DestFiles>
     <File xsi:nil="true" />
