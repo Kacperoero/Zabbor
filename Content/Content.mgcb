@@ -20,3 +20,9 @@
 
 #begin dialogues.json
 /copy:dialogues.json
+
+#begin board1.json
+/copy:board1.json
+
+#begin board2.json
+/copy:board2.json

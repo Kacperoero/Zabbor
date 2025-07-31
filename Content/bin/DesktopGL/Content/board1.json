@@ -1,0 +1,43 @@
+{
+  "walkableColor": "DarkGreen",
+  "solidColor": "SaddleBrown",
+  "tiles": [
+      "##################################################",
+      "#                                                #",
+      "#                                                #",
+      "#                                                #",
+      "#                                                #",
+      "#     ###                                        #",
+      "#     # #                                        #",
+      "#                                                #",
+      "#                                                #",
+      "#                                                #",
+      "#                                                #",
+      "#                                                #",
+      "#                   ##                           #",
+      "#                                                #",
+      "#                                                #",
+      "#                                   D            #",
+      "#                                                #",
+      "#                                                #",
+      "#                                                #",
+      "#                                                W",
+      "#                                                #",
+      "#                                                #",
+      "#                                                #",
+      "#                                                #",
+      "##################################################"
+    ],
+  "npcs": [
+    { "tileX": 8, "tileY": 8, "color": "Yellow", "dialogueId": "npc_yellow_greeting" },
+    { "tileX": 15, "tileY": 12, "color": "Cyan", "dialogueId": "npc_cyan_sword_legend" }
+  ],
+  "items": [
+    { "tileX": 10, "tileY": 15, "itemId": "potion_health_small" },
+    { "tileX": 20, "tileY": 22, "itemId": "key_rusty" }
+  ],
+  "warps": [
+    { "sourceX": 49, "sourceY": 19, "destMapId": "board2", "destX": 0, "destY": 19 },
+    { "sourceX": 18, "sourceY": 15, "destMapId": "board2", "destX": 10, "destY": 11 }
+  ]
+}

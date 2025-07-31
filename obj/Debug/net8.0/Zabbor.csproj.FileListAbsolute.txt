@@ -32,3 +32,5 @@ D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\ref\Zabbor.dll
 D:\Apps\MonoGame\Zabbor\obj\Debug\net8.0\Zabbor.sourcelink.json
 d:\Apps\MonoGame\Zabbor\bin\Debug\net8.0\Content\dialog_font.xnb
 D:\Apps\MonoGame\Zabbor\bin\Debug\net8.0\Content\dialogues.json
+D:\Apps\MonoGame\Zabbor\bin\Debug\net8.0\Content\board1.json
+D:\Apps\MonoGame\Zabbor\bin\Debug\net8.0\Content\board2.json

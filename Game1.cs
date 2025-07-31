@@ -88,8 +88,8 @@ namespace Zabbor
             _camera = new Camera(GraphicsDevice.Viewport);
             _maps = new Dictionary<string, IGameMap>
             {
-                { "Board1", new Board1(MAP_WIDTH, MAP_HEIGHT) },
-                { "Board2", new Board2(MAP_WIDTH, MAP_HEIGHT) }
+                { "board1", new GameMap("board1") },
+                { "board2", new GameMap("board2") }
             };
 
             if (saveData != null)
@@ -115,9 +115,9 @@ namespace Zabbor
                 _player = new Player(playerPosition, _maps[_currentMapId]);
                 _player.Inventory.SetItems(saveData.PlayerInventory);
             }
-            else
+            else // To jest kod dla nowej gry
             {
-                _currentMapId = "Board1";
+                _currentMapId = "board1";
                 var playerPosition = new Vector2(12 * TILE_SIZE, 9 * TILE_SIZE);
                 _player = new Player(playerPosition, _maps[_currentMapId]);
             }
