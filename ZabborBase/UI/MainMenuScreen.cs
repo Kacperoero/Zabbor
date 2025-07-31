@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using Zabbor.ZabborBase.Enums;
 using Zabbor.ZabborBase.Managers;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Zabbor.ZabborBase.UI // Użyj swojej przestrzeni nazw
 {
@@ -20,7 +21,7 @@ namespace Zabbor.ZabborBase.UI // Użyj swojej przestrzeni nazw
         {
             _font = font;
             _viewport = viewport;
-            if (SaveManager.SaveFileExists())
+            if (Enumerable.Range(0, 10).Any(i => SaveManager.SaveFileExists(i)))
             {
                 _menuItems.Insert(1, "Wczytaj Gre");
             }
@@ -51,7 +52,7 @@ namespace Zabbor.ZabborBase.UI // Użyj swojej przestrzeni nazw
                 switch (selectedItem)
                 {
                     case "Rozpocznij Gre": return GameState.NewGame;
-                    case "Wczytaj Gre": return GameState.LoadGame;
+                    case "Wczytaj Gre": return GameState.ShowLoadScreen;
                     case "Wyjdz": return GameState.Exit;
                 }
             }
