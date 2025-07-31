@@ -1,25 +1,29 @@
+// UI/MainMenuScreen.cs
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Zabbor.ZabborBase.Enums;
+using Zabbor.ZabborBase.Managers;
+using System.Collections.Generic;
 
-namespace Zabbor.ZabborBase.UI
+namespace Zabbor.ZabborBase.UI // Użyj swojej przestrzeni nazw
 {
     public class MainMenuScreen
     {
         private SpriteFont _font;
         private Viewport _viewport;
-
-        // ---- Nowe pola dla interaktywnego menu ----
-        private readonly string[] _menuItems = ["Rozpocznij Gre", "Wyjdz"];
+        private List<string> _menuItems = new List<string> { "Rozpocznij Gre", "Wyjdz" };
         private int _selectedIndex = 0;
         private KeyboardState _previousKeyboardState;
-
 
         public MainMenuScreen(SpriteFont font, Viewport viewport)
         {
             _font = font;
             _viewport = viewport;
+            if (SaveManager.SaveFileExists())
+            {
+                _menuItems.Insert(1, "Wczytaj Gre");
+            }
         }
 
         public GameState Update()
@@ -29,60 +33,49 @@ namespace Zabbor.ZabborBase.UI
             // Obsługa strzałek w dół i w górę
             if (kState.IsKeyDown(Keys.Down) && _previousKeyboardState.IsKeyUp(Keys.Down))
             {
-                _selectedIndex++;
-                if (_selectedIndex >= _menuItems.Length)
-                {
-                    _selectedIndex = 0; // Zawijanie na początek listy
-                }
+                _selectedIndex = (_selectedIndex + 1) % _menuItems.Count;
             }
             if (kState.IsKeyDown(Keys.Up) && _previousKeyboardState.IsKeyUp(Keys.Up))
             {
                 _selectedIndex--;
                 if (_selectedIndex < 0)
                 {
-                    _selectedIndex = _menuItems.Length - 1; // Zawijanie na koniec listy
+                    _selectedIndex = _menuItems.Count - 1;
+                }
+            }
+
+            // Obsługa klawisza Enter
+            if (kState.IsKeyDown(Keys.Enter) && _previousKeyboardState.IsKeyUp(Keys.Enter))
+            {
+                string selectedItem = _menuItems[_selectedIndex];
+                switch (selectedItem)
+                {
+                    case "Rozpocznij Gre": return GameState.NewGame;
+                    case "Wczytaj Gre": return GameState.LoadGame;
+                    case "Wyjdz": return GameState.Exit;
                 }
             }
             
-            // Zapisujemy stan klawiatury na koniec, aby w następnej klatce wiedzieć, co było wciśnięte
             _previousKeyboardState = kState;
-
-
-            // Obsługa klawisza Enter
-            if (kState.IsKeyDown(Keys.Enter))
-            {
-                // Zwróć stan w zależności od wybranej opcji
-                switch (_selectedIndex)
-                {
-                    case 0: // "Rozpocznij Gre"
-                        return GameState.Gameplay;
-                    case 1: // "Wyjdz"
-                        return GameState.Exit;
-                }
-            }
-
-            return GameState.MainMenu; // Domyślnie pozostań w menu
+            return GameState.MainMenu;
         }
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            string title = "Zabbor";
+            string title = "Zabbor"; // Zmieniony tytuł
             var titlePosition = new Vector2(
-                _viewport.Width / 2 - _font.MeasureString(title).X / 2,
-                _viewport.Height / 3);
+                _viewport.Width / 2f - _font.MeasureString(title).X / 2f,
+                _viewport.Height / 3f);
 
             spriteBatch.DrawString(_font, title, titlePosition, Color.White);
 
-            // Rysujemy opcje menu w pętli
-            for (int i = 0; i < _menuItems.Length; i++)
+            for (int i = 0; i < _menuItems.Count; i++)
             {
-                // Zmieniamy kolor, jeśli opcja jest zaznaczona
                 var color = (i == _selectedIndex) ? Color.Yellow : Color.White;
-                
                 var itemText = _menuItems[i];
                 var itemPosition = new Vector2(
-                    _viewport.Width / 2 - _font.MeasureString(itemText).X / 2,
-                    _viewport.Height / 2 + i * 40); // 40 pikseli odstępu między opcjami
+                    _viewport.Width / 2f - _font.MeasureString(itemText).X / 2f,
+                    _viewport.Height / 2f + i * 40);
 
                 spriteBatch.DrawString(_font, itemText, itemPosition, color);
             }

@@ -15,7 +15,7 @@ namespace Zabbor.ZabborBase.World
         private readonly int _height;
         private readonly List<Npc> _npcs = [];
         private readonly List<Warp> _warps = [];
-        private readonly List<WorldItem> _worldItems = [];
+        private List<WorldItem> _worldItems = [];
 
         public Board1(int width, int height)
         {
@@ -149,6 +149,12 @@ namespace Zabbor.ZabborBase.World
             {
                 npc.Draw(spriteBatch);
             }
+        }
+
+        public void RemoveItems(List<Point> itemPositions)
+        {
+            if (itemPositions == null) return;
+            _worldItems.RemoveAll(item => itemPositions.Contains(item.TilePosition));
         }
     }
 }

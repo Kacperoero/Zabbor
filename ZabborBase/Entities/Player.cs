@@ -3,26 +3,27 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using Zabbor.ZabborBase.Interfaces;
-using Zabbor.Managers;
-using Zabbor.ZabborBase.Systems;
 using Zabbor.ZabborBase.Managers;
+using Zabbor.ZabborBase.Systems;
+using Zabbor.Managers; // Dodany dla WorldItem
 
 namespace Zabbor.ZabborBase
 {
     public class Player
     {
         public Vector2 Position { get; private set; }
-
-        // Gracz ma teraz w sobie obiekt, który go reprezentuje graficznie
+        public Inventory Inventory { get; private set; }
         private Placeholder _graphics;
-        // Zmienne do obsługi ruchu po siatce
         private bool _isMoving = false;
-        private Vector2 _targetPosition; // Pozycja docelowa na siatce
-        private float _timeToMove = 0.15f; // Czas na przejście jednego kafelka (w sekundach)
+        private Vector2 _targetPosition;
+        private float _timeToMove = 0.15f;
         private float _moveTimer = 0f;
         private IGameMap _map;
         private Vector2 _facingDirection = new Vector2(0, 1);
-        public Inventory Inventory { get; private set; }
+        
+        // NOWE POLE do poprawnej obsługi klawiszy
+        private KeyboardState _previousKeyboardState;
+
 
         public Player(Vector2 position, IGameMap map)
         {
@@ -44,6 +45,8 @@ namespace Zabbor.ZabborBase
 
         public object Update(GameTime gameTime)
         {
+            var kState = Keyboard.GetState();
+
             if (_isMoving)
             {
                 _moveTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -56,23 +59,28 @@ namespace Zabbor.ZabborBase
                     _moveTimer = 0f;
                     Position = _targetPosition;
 
-                    // Sprawdzamy tylko portale po zakończeniu ruchu
                     var currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
                     var warp = _map.GetWarpAt(currentTile);
-                    if (warp != null) return warp;
+                    if (warp != null)
+                    {
+                        _previousKeyboardState = kState;
+                        return warp;
+                    }
                 }
             }
             else
             {
-                var kState = Keyboard.GetState();
-                
-                // Klawisz Spacji obsługuje teraz obie interakcje
-                if (kState.IsKeyDown(Keys.Space))
+                // POPRAWKA: Sprawdzamy jednorazowe wciśnięcie Spacji
+                if (kState.IsKeyDown(Keys.Space) && _previousKeyboardState.IsKeyUp(Keys.Space))
                 {
-                    return Interact();
+                    var interactionResult = Interact();
+                    if (interactionResult != null)
+                    {
+                        _previousKeyboardState = kState;
+                        return interactionResult;
+                    }
                 }
 
-                // Logika ruchu pozostaje bez zmian
                 Vector2 moveDirection = Vector2.Zero;
                 if (kState.IsKeyDown(Keys.W) || kState.IsKeyDown(Keys.Up)) moveDirection.Y = -1;
                 else if (kState.IsKeyDown(Keys.S) || kState.IsKeyDown(Keys.Down)) moveDirection.Y = 1;
@@ -94,6 +102,7 @@ namespace Zabbor.ZabborBase
             }
             
             _graphics.Position = Position;
+            _previousKeyboardState = kState;
             return null;
         }
         
@@ -101,16 +110,12 @@ namespace Zabbor.ZabborBase
         {
             var currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
             
-            // PRIORYTET 1: Sprawdź, czy na polu, na którym STOIMY, jest przedmiot
             var item = _map.GetWorldItemAt(currentTile);
             if (item != null)
             {
-                Inventory.AddItem(item.ItemId);
-                _map.RemoveWorldItemAt(currentTile);
-                return $"{ItemManager.GetItem(item.ItemId).Name} został podniesiony.";
+                return item; 
             }
 
-            // PRIORYTET 2: Jeśli nie, sprawdź, czy PRZED nami jest NPC
             var targetTile = new Point(currentTile.X + (int)_facingDirection.X, currentTile.Y + (int)_facingDirection.Y);
             var npc = _map.GetNpcAt(targetTile);
             if (npc != null)

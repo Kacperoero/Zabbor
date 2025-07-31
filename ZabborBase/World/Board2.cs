@@ -15,7 +15,7 @@ namespace Zabbor.ZabborBase.World
         private readonly int _height;
         private readonly List<Npc> _npcs = [];
         private readonly List<Warp> _warps = [];
-        private readonly List<WorldItem> _worldItems = [];
+        private List<WorldItem> _worldItems = [];
 
         public Board2(int width, int height)
         {
@@ -50,7 +50,7 @@ namespace Zabbor.ZabborBase.World
             _warps.Clear();
             _warps.Add(new Warp(new Point(0, 19), "Board1", new Point(49, 19)));
         }
-        
+
         // Puste metody, gotowe na przyszłość
         private void PlaceNpcs() { }
         private void PlaceItems() { }
@@ -85,7 +85,7 @@ namespace Zabbor.ZabborBase.World
                         tileColor = Color.DarkSlateGray;
                     else
                         tileColor = Color.CornflowerBlue;
-                    
+
                     spriteBatch.Draw(Placeholder.Texture, new Rectangle((int)tilePosition.X, (int)tilePosition.Y, Game1.TILE_SIZE, Game1.TILE_SIZE), tileColor);
                 }
             }
@@ -101,6 +101,12 @@ namespace Zabbor.ZabborBase.World
             {
                 npc.Draw(spriteBatch);
             }
+        }
+        
+        public void RemoveItems(List<Point> itemPositions)
+        {
+            if (itemPositions == null) return;
+            _worldItems.RemoveAll(item => itemPositions.Contains(item.TilePosition));
         }
     }
 }

@@ -7,7 +7,7 @@ namespace Zabbor.ZabborBase.Systems // Użyj swojej przestrzeni nazw
 {
     public class Inventory
     {
-        private readonly Dictionary<string, int> _itemCounts = new Dictionary<string, int>();
+        private Dictionary<string, int> _itemCounts = new Dictionary<string, int>();
 
         public void AddItem(string itemId)
         {
@@ -17,6 +17,18 @@ namespace Zabbor.ZabborBase.Systems // Użyj swojej przestrzeni nazw
                 _itemCounts[itemId] = 1;
         }
 
-        public Dictionary<string, int> GetItems() => _itemCounts;
+        public void SetItems(Dictionary<string, int> items)
+        {
+            _itemCounts.Clear();
+            if (items != null)
+            {
+                foreach (var item in items)
+                {
+                    _itemCounts[item.Key] = item.Value;
+                }
+            }
+        }
+
+        public Dictionary<string, int> GetItems() => new Dictionary<string, int>(_itemCounts);
     }
 }

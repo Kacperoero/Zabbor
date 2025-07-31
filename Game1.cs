@@ -9,6 +9,10 @@ using Zabbor.ZabborBase.UI;
 using Zabbor.ZabborBase.World;
 using Zabbor.ZabborBase.Enums;
 using System.Collections.Generic;
+using Zabbor.ZabborBase.Managers;
+using Zabbor.ZabborBase.Models;
+using Zabbor.ZabborBase.Entities;
+using System.Linq;
 
 namespace Zabbor
 {
@@ -36,6 +40,7 @@ namespace Zabbor
         private InventoryScreen _inventoryScreen;
         private bool _isInventoryOpen = false;
         private KeyboardState _previousKeyboardState;
+        private Dictionary<string, List<Point>> _removedItemsByMap = new Dictionary<string, List<Point>>();
 
 
         public Game1()
@@ -66,42 +71,121 @@ namespace Zabbor
             _inventoryScreen = new InventoryScreen(_dialogFont, GraphicsDevice);
         }
 
-        private void StartGameplay()
+        private void StartNewGame()
         {
+            _removedItemsByMap.Clear(); // Czyścimy stan usuniętych przedmiotów
+            InitializeGameplay(null); // Inicjalizujemy grę bez danych zapisu
+        }
+
+        private void LoadGameFromSave()
+        {
+            var saveData = SaveManager.LoadGame();
+            if (saveData != null)
+            {
+                InitializeGameplay(saveData); // Inicjalizujemy grę Z danymi zapisu
+            }
+            else // Jeśli plik jest uszkodzony lub nie istnieje, zacznij nową grę
+            {
+                StartNewGame();
+            }
+        }
+
+        private void InitializeGameplay(SaveData saveData)
+        {
+            // Ten fragment ładuje zasoby, które nie były potrzebne w menu
             Placeholder.Create(GraphicsDevice);
             DialogueManager.LoadDialogues();
+            
             _camera = new Camera(GraphicsDevice.Viewport);
 
-            // Inicjalizujemy wszystkie mapy
             _maps = new Dictionary<string, IGameMap>
             {
                 { "Board1", new Board1(MAP_WIDTH, MAP_HEIGHT) },
                 { "Board2", new Board2(MAP_WIDTH, MAP_HEIGHT) }
             };
-            _currentMapId = "Board1"; // Zaczynamy od pierwszej mapy
+            
+            // Jeśli wczytujemy grę, musimy najpierw odtworzyć stan usuniętych przedmiotów
+            if (saveData != null)
+            {
+                // Konwertujemy wczytany słownik na taki z normalnymi Pointami
+                var loadedRemovedItems = saveData.RemovedWorldItems ?? new Dictionary<string, List<SerializablePoint>>();
+                _removedItemsByMap = loadedRemovedItems.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value.Select(p => new Point(p.X, p.Y)).ToList()
+                );
 
-            var playerPosition = new Vector2(12 * TILE_SIZE, 9 * TILE_SIZE);
-            _player = new Player(playerPosition, _maps[_currentMapId]);
+                foreach (var mapEntry in _removedItemsByMap)
+                {
+                    if (_maps.ContainsKey(mapEntry.Key))
+                    {
+                        _maps[mapEntry.Key].RemoveItems(mapEntry.Value);
+                    }
+                }
+            }
+
+            // Teraz konfigurujemy gracza i mapę
+            if (saveData != null)
+            {
+                _currentMapId = saveData.CurrentMapId;
+                var playerTilePos = new Point(saveData.PlayerTilePosition.X, saveData.PlayerTilePosition.Y);
+                var playerPosition = new Vector2(playerTilePos.X * TILE_SIZE, playerTilePos.Y * TILE_SIZE);
+                _player = new Player(playerPosition, _maps[_currentMapId]);
+                _player.Inventory.SetItems(saveData.PlayerInventory);
+            }
+            else // To jest kod dla nowej gry
+            {
+                _currentMapId = "Board1";
+                var playerPosition = new Vector2(12 * TILE_SIZE, 9 * TILE_SIZE);
+                _player = new Player(playerPosition, _maps[_currentMapId]);
+            }
+        }
+
+        private void SaveCurrentGame()
+        {
+            // Ręcznie tworzymy słownik z poprawnymi typami
+            var serializableRemovedItems = new Dictionary<string, List<SerializablePoint>>();
+            foreach (var mapEntry in _removedItemsByMap)
+            {
+                var serializableList = new List<SerializablePoint>();
+                foreach (var point in mapEntry.Value)
+                {
+                    serializableList.Add(new SerializablePoint(point.X, point.Y));
+                }
+                serializableRemovedItems.Add(mapEntry.Key, serializableList);
+            }
+
+            var saveData = new SaveData
+            {
+                CurrentMapId = _currentMapId,
+                PlayerTilePosition = new SerializablePoint((int)_player.Position.X / TILE_SIZE, (int)_player.Position.Y / TILE_SIZE),
+                PlayerInventory = _player.Inventory.GetItems(),
+                RemovedWorldItems = serializableRemovedItems // Przypisujemy ręcznie stworzony słownik
+            };
+            
+            SaveManager.SaveGame(saveData);
+            ShowDialog("Gra zapisana!");
         }
 
         protected override void Update(GameTime gameTime)
         {
-            // Używamy switcha do zarządzania logiką w zależności od stanu
             switch (_currentState)
             {
                 case GameState.MainMenu:
                     var nextState = _mainMenuScreen.Update();
                     if (nextState != GameState.MainMenu)
                     {
-                        if (nextState == GameState.Gameplay)
+                        if (nextState == GameState.NewGame)
                         {
-                            StartGameplay(); // Inicjalizujemy grę
-                            _currentState = GameState.Gameplay; // Zmieniamy stan
+                            StartNewGame();
+                            _currentState = GameState.Gameplay;
                         }
-                        else if (nextState == GameState.Exit)
+                        else if (nextState == GameState.LoadGame)
                         {
-                            Exit();
+                            LoadGameFromSave();
+                            _currentState = GameState.Gameplay;
                         }
+                        else if (nextState == GameState.Exit) Exit();
+                        _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport); // Odśwież menu
                     }
                     break;
 
@@ -109,7 +193,6 @@ namespace Zabbor
                     UpdateGameplay(gameTime);
                     break;
             }
-
             base.Update(gameTime);
         }
 
@@ -154,6 +237,11 @@ namespace Zabbor
                 _currentState = GameState.MainMenu;
             }
 
+            if (kState.IsKeyDown(Keys.F5) && _previousKeyboardState.IsKeyUp(Keys.F5))
+            {
+                SaveCurrentGame();
+            }
+
             // Aktualizacja gracza i jego akcji
             var playerResult = _player.Update(gameTime);
             if (playerResult is string dialog)
@@ -163,6 +251,24 @@ namespace Zabbor
             else if (playerResult is Warp warp)
             {
                 ChangeMap(warp);
+            }
+            else if (playerResult is WorldItem pickedItem)
+            {
+                // 1. Dodaj do ekwipunku gracza
+                _player.Inventory.AddItem(pickedItem.ItemId);
+                
+                // 2. Usuń z mapy
+                _maps[_currentMapId].RemoveWorldItemAt(pickedItem.TilePosition);
+
+                // 3. Zarejestruj usunięcie na potrzeby zapisu gry
+                if (!_removedItemsByMap.ContainsKey(_currentMapId))
+                {
+                    _removedItemsByMap[_currentMapId] = new List<Point>();
+                }
+                _removedItemsByMap[_currentMapId].Add(pickedItem.TilePosition);
+
+                // 4. Pokaż komunikat
+                ShowDialog($"{ItemManager.GetItem(pickedItem.ItemId).Name} został podniesiony.");
             }
 
             // Aktualizacja kamery
