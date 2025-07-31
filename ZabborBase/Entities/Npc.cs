@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Zabbor.Screens;
 
 namespace Zabbor.ZabborBase.Entities
 {
@@ -13,8 +14,8 @@ namespace Zabbor.ZabborBase.Entities
         {
             TilePosition = tilePosition;
             DialogueId = dialogueId;
-            var screenPosition = new Vector2(tilePosition.X * Game1.TILE_SIZE, tilePosition.Y * Game1.TILE_SIZE);
-            _graphics = new Placeholder(screenPosition, new Point(Game1.TILE_SIZE), color);
+            var screenPosition = new Vector2(tilePosition.X * GameplayScreen.TILE_SIZE, tilePosition.Y * GameplayScreen.TILE_SIZE);
+            _graphics = new Placeholder(screenPosition, new Point(GameplayScreen.TILE_SIZE), color);
         }
 
         public void Draw(SpriteBatch spriteBatch)

@@ -6,7 +6,8 @@ using Zabbor.ZabborBase.Interfaces;
 using Zabbor.ZabborBase.Managers;
 using Zabbor.ZabborBase.Systems;
 using Zabbor.Managers;
-using Zabbor.Core; // Dodany dla WorldItem
+using Zabbor.Core;
+using Zabbor.Screens; // Dodany dla WorldItem
 
 namespace Zabbor.ZabborBase
 {
@@ -27,7 +28,7 @@ namespace Zabbor.ZabborBase
         {
             Position = position;
             _targetPosition = position;
-            _graphics = new Placeholder(position, new Point(Game1.TILE_SIZE), Color.White);
+            _graphics = new Placeholder(position, new Point(GameplayScreen.TILE_SIZE), Color.White);
             _map = map; 
             Inventory = new Inventory();
         }
@@ -57,7 +58,7 @@ namespace Zabbor.ZabborBase
                     _moveTimer = 0f;
                     Position = _targetPosition;
 
-                    var currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
+                    var currentTile = new Point((int)(Position.X / GameplayScreen.TILE_SIZE), (int)(Position.Y / GameplayScreen.TILE_SIZE));
                     var warp = _map.GetWarpAt(currentTile);
                     if (warp != null)
                     {
@@ -85,12 +86,12 @@ namespace Zabbor.ZabborBase
                 if (moveDirection != Vector2.Zero)
                 {
                     _facingDirection = moveDirection;
-                    Point currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
+                    Point currentTile = new Point((int)(Position.X / GameplayScreen.TILE_SIZE), (int)(Position.Y / GameplayScreen.TILE_SIZE));
                     Point targetTile = new Point(currentTile.X + (int)moveDirection.X, currentTile.Y + (int)moveDirection.Y);
 
                     if (_map.IsTileWalkable(targetTile))
                     {
-                        _targetPosition = new Vector2(targetTile.X * Game1.TILE_SIZE, targetTile.Y * Game1.TILE_SIZE);
+                        _targetPosition = new Vector2(targetTile.X * GameplayScreen.TILE_SIZE, targetTile.Y * GameplayScreen.TILE_SIZE);
                         _isMoving = true;
                     }
                 }
@@ -102,7 +103,7 @@ namespace Zabbor.ZabborBase
         
         private object Interact()
         {
-            var currentTile = new Point((int)(Position.X / Game1.TILE_SIZE), (int)(Position.Y / Game1.TILE_SIZE));
+            var currentTile = new Point((int)(Position.X / GameplayScreen.TILE_SIZE), (int)(Position.Y / GameplayScreen.TILE_SIZE));
             
             var item = _map.GetWorldItemAt(currentTile);
             if (item != null)

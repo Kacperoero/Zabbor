@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Zabbor.Screens;
 using Zabbor.ZabborBase.Entities;
 using Zabbor.ZabborBase.Enums;
 using Zabbor.ZabborBase.Interfaces;
@@ -149,7 +150,7 @@ namespace Zabbor.ZabborBase.World
             {
                 for (int y = 0; y < _height; y++)
                 {
-                    var tilePosition = new Vector2(x * Game1.TILE_SIZE, y * Game1.TILE_SIZE);
+                    var tilePosition = new Vector2(x * GameplayScreen.TILE_SIZE, y * GameplayScreen.TILE_SIZE);
                     var currentTilePoint = new Point(x, y);
                     Color tileColor;
 
@@ -157,7 +158,7 @@ namespace Zabbor.ZabborBase.World
                     else if (_tiles[x, y] == TileType.Solid) tileColor = _solidColor;
                     else tileColor = _walkableColor;
                     
-                    spriteBatch.Draw(Placeholder.Texture, new Rectangle((int)tilePosition.X, (int)tilePosition.Y, Game1.TILE_SIZE, Game1.TILE_SIZE), tileColor);
+                    spriteBatch.Draw(Placeholder.Texture, new Rectangle((int)tilePosition.X, (int)tilePosition.Y, GameplayScreen.TILE_SIZE, GameplayScreen.TILE_SIZE), tileColor);
                 }
             }
             foreach (var item in _worldItems) item.Draw(spriteBatch);

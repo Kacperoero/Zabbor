@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Zabbor.Screens;
 
 namespace Zabbor.ZabborBase.Entities
 {
@@ -13,7 +14,7 @@ namespace Zabbor.ZabborBase.Entities
         {
             TilePosition = tilePosition;
             ItemId = itemId;
-            var screenPosition = new Vector2(tilePosition.X * Game1.TILE_SIZE, tilePosition.Y * Game1.TILE_SIZE);
+            var screenPosition = new Vector2(tilePosition.X * GameplayScreen.TILE_SIZE, tilePosition.Y * GameplayScreen.TILE_SIZE);
             // Przedmioty na mapie będą małymi, czerwonymi kwadratami
             _graphics = new Placeholder(screenPosition, new Point(16, 16), Color.Red);
         }

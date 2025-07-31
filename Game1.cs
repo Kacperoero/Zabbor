@@ -1,19 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using Zabbor.Core;
-using Zabbor.ZabborBase;
-using Zabbor.ZabborBase.Interfaces;
-using Zabbor.ZabborBase.UI;
-using Zabbor.ZabborBase.World;
 using Zabbor.ZabborBase.Enums;
-using System.Collections.Generic;
 using Zabbor.ZabborBase.Managers;
-using Zabbor.ZabborBase.Models;
-using Zabbor.ZabborBase.Entities;
-using System.Linq;
-using System;
-using Zabbor.Managers;
+using Zabbor.ZabborBase.UI;
+using Zabbor.Screens;
+using Zabbor.Core;
 
 namespace Zabbor
 {
@@ -21,28 +12,15 @@ namespace Zabbor
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-
-        // ---- Pola dla stanów gry ----
+        
+        // ---- Główne pola ----
         private GameState _currentState;
+        private SpriteFont _dialogFont;
+        
+        // ---- Ekrany Gry ----
         private MainMenuScreen _mainMenuScreen;
         private SaveLoadScreen _saveLoadScreen;
-        
-        // ---- Pola dla stanu Gameplay ----
-        private Player _player;
-        private Camera _camera;
-        private DialogBox _activeDialog;
-        
-        // ---- Wspólne zasoby i stałe ----
-        public const int TILE_SIZE = 32;
-        private const int MAP_WIDTH = 50;
-        private const int MAP_HEIGHT = 40;
-        private SpriteFont _dialogFont;
-        private Dictionary<string, IGameMap> _maps;
-        private string _currentMapId;
-        private InventoryScreen _inventoryScreen;
-        private bool _isInventoryOpen = false;
-        private Dictionary<string, List<Point>> _removedItemsByMap = new Dictionary<string, List<Point>>();
-        private bool _isGameInProgress = false;
+        private GameplayScreen _gameplayScreen;
 
         public Game1()
         {
@@ -65,86 +43,6 @@ namespace Zabbor
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _dialogFont = Content.Load<SpriteFont>("dialog_font");
             _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, false);
-            _inventoryScreen = new InventoryScreen(_dialogFont, GraphicsDevice);
-        }
-
-        private void StartNewGame()
-        {
-            _removedItemsByMap.Clear();
-            InitializeGameplay(null);
-            _isGameInProgress = true;
-        }
-
-        // POPRAWKA: Ta metoda przyjmuje teraz slotIndex
-        private void LoadGameFromSlot(int slotIndex)
-        {
-            var saveData = SaveManager.LoadGame(slotIndex);
-            InitializeGameplay(saveData);
-            _isGameInProgress = true;
-        }
-
-        private void InitializeGameplay(SaveData saveData)
-        {
-            Placeholder.Create(GraphicsDevice);
-            DialogueManager.LoadDialogues();
-            _camera = new Camera(GraphicsDevice.Viewport);
-            _maps = new Dictionary<string, IGameMap>
-            {
-                { "board1", new GameMap("board1") },
-                { "board2", new GameMap("board2") }
-            };
-
-            if (saveData != null)
-            {
-                var loadedRemovedItems = saveData.RemovedWorldItems ?? new Dictionary<string, List<SerializablePoint>>();
-                _removedItemsByMap = loadedRemovedItems.ToDictionary(
-                    kvp => kvp.Key,
-                    kvp => kvp.Value.Select(p => new Point(p.X, p.Y)).ToList()
-                );
-
-                foreach (var mapEntry in _removedItemsByMap)
-                {
-                    if (_maps.ContainsKey(mapEntry.Key))
-                        _maps[mapEntry.Key].RemoveItems(mapEntry.Value);
-                }
-            }
-
-            if (saveData != null)
-            {
-                _currentMapId = saveData.CurrentMapId;
-                var playerTilePos = new Point(saveData.PlayerTilePosition.X, saveData.PlayerTilePosition.Y);
-                var playerPosition = new Vector2(playerTilePos.X * TILE_SIZE, playerTilePos.Y * TILE_SIZE);
-                _player = new Player(playerPosition, _maps[_currentMapId]);
-                _player.Inventory.SetItems(saveData.PlayerInventory);
-            }
-            else // To jest kod dla nowej gry
-            {
-                _currentMapId = "board1";
-                var playerPosition = new Vector2(12 * TILE_SIZE, 9 * TILE_SIZE);
-                _player = new Player(playerPosition, _maps[_currentMapId]);
-            }
-        }
-        
-        // POPRAWKA: Ta metoda przyjmuje teraz slotIndex
-        private void SaveCurrentGame(int slotIndex)
-        {
-            var serializableRemovedItems = new Dictionary<string, List<SerializablePoint>>();
-            foreach (var mapEntry in _removedItemsByMap)
-            {
-                serializableRemovedItems.Add(mapEntry.Key, mapEntry.Value.Select(p => new SerializablePoint(p.X, p.Y)).ToList());
-            }
-
-            var saveData = new SaveData
-            {
-                SaveName = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                CurrentMapId = _currentMapId,
-                PlayerTilePosition = new SerializablePoint((int)_player.Position.X / TILE_SIZE, (int)_player.Position.Y / TILE_SIZE),
-                PlayerInventory = _player.Inventory.GetItems(),
-                RemovedWorldItems = serializableRemovedItems
-            };
-            
-            SaveManager.SaveGame(saveData, slotIndex);
-            ShowDialog("Gra zapisana!");
         }
 
         protected override void Update(GameTime gameTime)
@@ -155,138 +53,80 @@ namespace Zabbor
             {
                 case GameState.MainMenu:
                     var nextState = _mainMenuScreen.Update();
-                    if (nextState != GameState.MainMenu)
-                    {
-                        if (nextState == GameState.NewGame)
-                        {
-                            StartNewGame();
-                            _currentState = GameState.Gameplay;
-                        }
-                        else if (nextState == GameState.ResumeGame)
-                        {
-                            _currentState = GameState.Gameplay;
-                        }
-                        else if (nextState == GameState.ShowLoadScreen)
-                        {
-                            _saveLoadScreen = new SaveLoadScreen(_dialogFont, GraphicsDevice.Viewport, SaveLoadMode.Load);
-                            _currentState = nextState;
-                        }
-                        else if (nextState == GameState.Exit) Exit();
-                        
-                        _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, _isGameInProgress);
-                    }
+                    if (nextState != GameState.MainMenu) HandleMenuSelection(nextState);
                     break;
-
+                
                 case GameState.ShowLoadScreen:
                 case GameState.ShowSaveScreen:
                     int selectedSlot = _saveLoadScreen.Update();
-                    if (selectedSlot >= 0)
-                    {
-                        if (_currentState == GameState.ShowLoadScreen)
-                            LoadGameFromSlot(selectedSlot);
-                        else
-                            SaveCurrentGame(selectedSlot);
-                        
-                        _currentState = GameState.Gameplay;
-                    }
-                    else if (selectedSlot == -1)
-                    {
-                        _currentState = (_currentState == GameState.ShowSaveScreen) ? GameState.Gameplay : GameState.MainMenu;
-                        if (_currentState == GameState.MainMenu)
-                            _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, _isGameInProgress);
-                    }
+                    HandleSaveLoadSelection(selectedSlot);
                     break;
 
                 case GameState.Gameplay:
-                    UpdateGameplay(gameTime);
+                    var gameplayResult = _gameplayScreen.Update(gameTime);
+                    if (gameplayResult != GameState.Gameplay) HandleMenuSelection(gameplayResult);
                     break;
             }
             base.Update(gameTime);
         }
 
-        private void UpdateGameplay(GameTime gameTime)
+        private void HandleMenuSelection(GameState nextState)
         {
-            if (_isInventoryOpen)
+            _currentState = nextState;
+            if (nextState == GameState.NewGame)
             {
-                // Używamy WasKeyPressed dla jednorazowego wciśnięcia
-                if (InputManager.WasKeyPressed(Keys.E) || InputManager.WasKeyPressed(Keys.Q))
-                {
-                    _isInventoryOpen = false;
-                }
-                return;
+                _gameplayScreen = new GameplayScreen();
+                _gameplayScreen.Initialize(null, GraphicsDevice, _dialogFont);
+                _currentState = GameState.Gameplay;
             }
-
-            if (_activeDialog != null)
+            else if (nextState == GameState.ShowLoadScreen)
             {
-                if (InputManager.WasKeyPressed(Keys.Q))
-                {
-                    _activeDialog = null;
-                }
-                return;
+                _saveLoadScreen = new SaveLoadScreen(_dialogFont, GraphicsDevice.Viewport, SaveLoadMode.Load);
+            }
+            else if (nextState == GameState.Exit) Exit();
+            else if (nextState == GameState.ResumeGame)
+            {
+                _currentState = GameState.Gameplay;
             }
             
-            if (InputManager.WasKeyPressed(Keys.I)) // To można usunąć, ale zostawiam jako przykład
+            if (_currentState == GameState.MainMenu)
             {
-                _isInventoryOpen = true;
+                _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, _gameplayScreen != null);
             }
-            else if (InputManager.WasKeyPressed(Keys.E)) // Poprawione otwieranie ekwipunku
+        }
+        
+        private void HandleSaveLoadSelection(int selectedSlot)
+        {
+            if (selectedSlot >= 0)
             {
-                _isInventoryOpen = true;
-            }
-            else if (InputManager.WasKeyPressed(Keys.Escape))
-            {
-                _currentState = GameState.MainMenu;
-                _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, _isGameInProgress);
-            }
-            else if (InputManager.WasKeyPressed(Keys.F5))
-            {
-                _saveLoadScreen = new SaveLoadScreen(_dialogFont, GraphicsDevice.Viewport, SaveLoadMode.Save);
-                _currentState = GameState.ShowSaveScreen;
-            }
-            else
-            {
-                var playerResult = _player.Update(gameTime);
-                if (playerResult is string dialog)
-                    ShowDialog(dialog);
-                else if (playerResult is Warp warp)
-                    ChangeMap(warp);
-                else if (playerResult is WorldItem pickedItem)
+                if (_currentState == GameState.ShowLoadScreen)
                 {
-                    _player.Inventory.AddItem(pickedItem.ItemId);
-                    _maps[_currentMapId].RemoveWorldItemAt(pickedItem.TilePosition);
-
-                    if (!_removedItemsByMap.ContainsKey(_currentMapId))
-                        _removedItemsByMap[_currentMapId] = new List<Point>();
-                    
-                    _removedItemsByMap[_currentMapId].Add(pickedItem.TilePosition);
-                    ShowDialog($"{ItemManager.GetItem(pickedItem.ItemId).Name} został podniesiony.");
+                    var saveData = SaveManager.LoadGame(selectedSlot);
+                    _gameplayScreen = new GameplayScreen();
+                    _gameplayScreen.Initialize(saveData, GraphicsDevice, _dialogFont);
                 }
+                else // Tryb zapisu
+                {
+                    var saveData = _gameplayScreen.GetSaveData();
+                    SaveManager.SaveGame(saveData, selectedSlot);
+                }
+                _currentState = GameState.Gameplay;
             }
-            
-            var mapSizeInPixels = new Point(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
-            _camera.Follow(_player.Position, mapSizeInPixels);
-        }
-
-        private void ChangeMap(Warp warp)
-        {
-            _currentMapId = warp.DestinationMapId;
-            var newMap = _maps[_currentMapId];
-            var newPosition = new Vector2(warp.DestinationTile.X * TILE_SIZE, warp.DestinationTile.Y * TILE_SIZE);
-            _player.SetPosition(newPosition, newMap);
-        }
-
-        public void ShowDialog(string text)
-        {
-            _activeDialog = new DialogBox(text, _dialogFont, GraphicsDevice);
+            else if (selectedSlot == -1) // Anulowano
+            {
+                _currentState = (_currentState == GameState.ShowSaveScreen) ? GameState.Gameplay : GameState.MainMenu;
+                if (_currentState == GameState.MainMenu)
+                    _mainMenuScreen = new MainMenuScreen(_dialogFont, GraphicsDevice.Viewport, _gameplayScreen != null);
+            }
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            // Używamy switcha do zarządzania rysowaniem w zależności od stanu
+            GraphicsDevice.Clear(Color.Black);
+            
             switch (_currentState)
             {
                 case GameState.MainMenu:
-                    GraphicsDevice.Clear(Color.Black);
                     _spriteBatch.Begin();
                     _mainMenuScreen.Draw(_spriteBatch);
                     _spriteBatch.End();
@@ -294,33 +134,16 @@ namespace Zabbor
                 
                 case GameState.ShowLoadScreen:
                 case GameState.ShowSaveScreen:
-                    GraphicsDevice.Clear(Color.Black);
                     _spriteBatch.Begin();
                     _saveLoadScreen.Draw(_spriteBatch);
                     _spriteBatch.End();
                     break;
 
                 case GameState.Gameplay:
-                    DrawGameplay(gameTime);
+                    _gameplayScreen.Draw(_spriteBatch);
                     break;
             }
-
             base.Draw(gameTime);
-        }
-
-        private void DrawGameplay(GameTime gameTime)
-        {
-            GraphicsDevice.Clear(Color.Black);
-
-            _spriteBatch.Begin(transformMatrix: _camera.Transform);
-            _maps[_currentMapId].Draw(_spriteBatch);
-            _player.Draw(_spriteBatch);
-            _spriteBatch.End();
-
-            _spriteBatch.Begin();
-            if (_activeDialog != null) _activeDialog.Draw(_spriteBatch);
-            if (_isInventoryOpen) _inventoryScreen.Draw(_spriteBatch, _player.Inventory.GetItems());
-            _spriteBatch.End();
         }
     }
 }
