@@ -8,12 +8,14 @@ namespace Zabbor.ZabborBase.Entities
         public string Name { get; set; }
         public CharacterClass Class { get; set; }
         public CharacterStats Stats { get; set; }
+        public bool IsPlayerControlled { get; set; }
 
-        public Character(string name, CharacterClass characterClass, CharacterStats stats)
+        public Character(string name, CharacterClass characterClass, CharacterStats stats, bool isPlayerControlled)
         {
             Name = name;
             Class = characterClass;
             Stats = stats;
+            IsPlayerControlled = isPlayerControlled;
         }
     }
 }
