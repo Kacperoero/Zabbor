@@ -21,6 +21,7 @@ namespace Zabbor
         private MainMenuScreen _mainMenuScreen;
         private SaveLoadScreen _saveLoadScreen;
         private GameplayScreen _gameplayScreen;
+        private CombatScreen _combatScreen;
 
         public Game1()
         {
@@ -62,9 +63,27 @@ namespace Zabbor
                     HandleSaveLoadSelection(selectedSlot);
                     break;
 
-                case GameState.Gameplay:
+                 case GameState.Gameplay:
                     var gameplayResult = _gameplayScreen.Update(gameTime);
-                    if (gameplayResult != GameState.Gameplay) HandleMenuSelection(gameplayResult);
+                    
+                    if (gameplayResult == GameState.Combat)
+                    {
+                        _combatScreen = new CombatScreen(_dialogFont);
+                        _combatScreen.StartCombat();
+                        _currentState = GameState.Combat;
+                    }
+                    else if (gameplayResult != GameState.Gameplay)
+                    {
+                        HandleMenuSelection(gameplayResult);
+                    }
+                    break;
+                
+                case GameState.Combat:
+                    var combatResult = _combatScreen.Update(gameTime);
+                    if (combatResult != GameState.Combat)
+                    {
+                        _currentState = GameState.Gameplay;
+                    }
                     break;
             }
             base.Update(gameTime);
@@ -123,7 +142,7 @@ namespace Zabbor
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
-            
+
             switch (_currentState)
             {
                 case GameState.MainMenu:
@@ -131,7 +150,7 @@ namespace Zabbor
                     _mainMenuScreen.Draw(_spriteBatch);
                     _spriteBatch.End();
                     break;
-                
+
                 case GameState.ShowLoadScreen:
                 case GameState.ShowSaveScreen:
                     _spriteBatch.Begin();
@@ -141,6 +160,11 @@ namespace Zabbor
 
                 case GameState.Gameplay:
                     _gameplayScreen.Draw(_spriteBatch);
+                    break;
+                case GameState.Combat:
+                    _spriteBatch.Begin();
+                    _combatScreen.Draw(_spriteBatch);
+                    _spriteBatch.End();
                     break;
             }
             base.Draw(gameTime);

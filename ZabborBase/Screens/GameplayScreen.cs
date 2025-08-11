@@ -95,6 +95,13 @@ namespace Zabbor.Screens // Użyj swojej przestrzeni nazw
                     _activeDialog = null;
                 return GameState.Gameplay;
             }
+
+            // TEMPORARY
+            if (InputManager.WasKeyPressed(Keys.F1))
+            {
+                return GameState.Combat;
+            }
+            // TEMPORARY
             
             if (InputManager.WasKeyPressed(Keys.E))
                 _isInventoryOpen = true;

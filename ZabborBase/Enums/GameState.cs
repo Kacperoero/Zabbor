@@ -7,6 +7,7 @@ namespace Zabbor.ZabborBase.Enums
         ResumeGame,
         ShowLoadScreen,
         ShowSaveScreen,
+        Combat,
         Gameplay,
         Exit
     }
