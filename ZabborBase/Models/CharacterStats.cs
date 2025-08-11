@@ -6,5 +6,6 @@ namespace Zabbor.ZabborBase.Models
         public int CurrentHealth { get; set; }
         public int Armor { get; set; }
         public int Speed { get; set; }
+        public int Attack { get; set; }
     }
 }
