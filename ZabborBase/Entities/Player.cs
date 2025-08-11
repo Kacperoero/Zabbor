@@ -14,7 +14,7 @@ namespace Zabbor.ZabborBase
     public class Player
     {
         public Vector2 Position { get; private set; }
-        public Inventory Inventory { get; private set; }
+        public Party Party { get; private set; }
         private Placeholder _graphics;
         private bool _isMoving = false;
         private Vector2 _targetPosition;
@@ -30,7 +30,7 @@ namespace Zabbor.ZabborBase
             _targetPosition = position;
             _graphics = new Placeholder(position, new Point(GameplayScreen.TILE_SIZE), Color.White);
             _map = map; 
-            Inventory = new Inventory();
+            Party = new Party();
         }
 
         public void SetPosition(Vector2 newPosition, IGameMap newMap)

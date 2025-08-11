@@ -70,7 +70,7 @@ namespace Zabbor.Screens // Użyj swojej przestrzeni nazw
                 var playerTilePos = new Point(saveData.PlayerTilePosition.X, saveData.PlayerTilePosition.Y);
                 var playerPosition = new Vector2(playerTilePos.X * TILE_SIZE, playerTilePos.Y * TILE_SIZE);
                 _player = new Player(playerPosition, _maps[_currentMapId]);
-                _player.Inventory.SetItems(saveData.PlayerInventory);
+                _player.Party.SharedInventory.SetItems(saveData.PlayerInventory);
             }
             else
             {
@@ -111,7 +111,7 @@ namespace Zabbor.Screens // Użyj swojej przestrzeni nazw
                     ChangeMap(warp);
                 else if (playerResult is WorldItem pickedItem)
                 {
-                    _player.Inventory.AddItem(pickedItem.ItemId);
+                    _player.Party.SharedInventory.AddItem(pickedItem.ItemId);
                     _maps[_currentMapId].RemoveWorldItemAt(pickedItem.TilePosition);
                     if (!_removedItemsByMap.ContainsKey(_currentMapId))
                         _removedItemsByMap[_currentMapId] = new List<Point>();
@@ -135,7 +135,7 @@ namespace Zabbor.Screens // Użyj swojej przestrzeni nazw
 
             spriteBatch.Begin();
             if (_activeDialog != null) _activeDialog.Draw(spriteBatch);
-            if (_isInventoryOpen) _inventoryScreen.Draw(spriteBatch, _player.Inventory.GetItems());
+            if (_isInventoryOpen) _inventoryScreen.Draw(spriteBatch, _player.Party.SharedInventory.GetItems());
             spriteBatch.End();
         }
         
@@ -150,7 +150,7 @@ namespace Zabbor.Screens // Użyj swojej przestrzeni nazw
                 SaveName = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 CurrentMapId = _currentMapId,
                 PlayerTilePosition = new SerializablePoint((int)_player.Position.X / TILE_SIZE, (int)_player.Position.Y / TILE_SIZE),
-                PlayerInventory = _player.Inventory.GetItems(),
+                PlayerInventory = _player.Party.SharedInventory.GetItems(),
                 RemovedWorldItems = serializableRemovedItems // <-- POPRAWKA
             };
         }
