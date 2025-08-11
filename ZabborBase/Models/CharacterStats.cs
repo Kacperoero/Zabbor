@@ -7,5 +7,7 @@ namespace Zabbor.ZabborBase.Models
         public int Armor { get; set; }
         public int Speed { get; set; }
         public int Attack { get; set; }
+        public int MovementPoints { get; set; } 
+        public int AttackRange { get; set; }
     }
 }

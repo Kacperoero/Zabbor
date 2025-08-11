@@ -1,4 +1,5 @@
 using System;
+using Microsoft.Xna.Framework;
 using Zabbor.ZabborBase.Enums;
 using Zabbor.ZabborBase.Models;
 
@@ -10,6 +11,7 @@ namespace Zabbor.ZabborBase.Entities
         public CharacterClass Class { get; set; }
         public CharacterStats Stats { get; set; }
         public bool IsPlayerControlled { get; set; }
+        public Point CombatPosition { get; set; }
         public bool IsAlive => Stats.CurrentHealth > 0;
 
         public Character(string name, CharacterClass characterClass, CharacterStats stats, bool isPlayerControlled)
