@@ -70,11 +70,7 @@ namespace Zabbor.ZabborBase
             {
                 if (InputManager.WasKeyPressed(Keys.Space))
                 {
-                    var interactionResult = Interact();
-                    if (interactionResult != null)
-                    {
-                        return interactionResult;
-                    }
+                    return Interact();
                 }
 
                 Vector2 moveDirection = Vector2.Zero;

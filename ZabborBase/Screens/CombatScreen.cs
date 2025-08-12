@@ -14,26 +14,28 @@ using Microsoft.Xna.Framework.Input;
 
 namespace Zabbor.Screens
 {
-    public enum CombatState { PlayerActionSelect, PlayerMoveSelect, PlayerTargetTileSelect, PlayerTargetSelect, EnemyTurn, Processing, Finished }
+    public enum CombatState { ProcessingTurn, PlayerActionSelect, PlayerMoveSelect, PlayerTargetTileSelect, ExecutingMove, EnemyTurn, Finished }
 
     public class CombatScreen
     {
         public const int TILE_SIZE = 32;
         private SpriteFont _font;
         private List<Character> _combatants;
-        private int _currentTurnIndex;
+        private Character _activeCombatant;
         private CombatState _currentState;
         private List<Character> _playerParty;
         private List<Character> _enemies;
         private int _actionIndex = 0;
-        private int _targetIndex = 0;
         private readonly string[] _actions = { "Ruch", "Atakuj", "Obron sie" };
         private string _combatLog = "";
         private CombatGrid _combatGrid;
         private List<Point> _reachableTiles = new List<Point>();
         private List<Point> _attackableTiles = new List<Point>();
         private Point _cursorPosition;
-        private List<Character> _targetsInRange = new List<Character>();
+        private float _enemyTurnTimer = 0f;
+        private Queue<Point> _movePath;
+        private float _moveTimer = 0f;
+        private const float TIME_PER_TILE = 0.2f;
 
         public CombatScreen(SpriteFont font)
         {
@@ -54,50 +56,54 @@ namespace Zabbor.Screens
                 new Character("Goblin", CharacterClass.Knight, new CharacterStats { MaxHealth = 40, Armor = 2, Speed = 9, Attack = 12, MovementPoints = 4, AttackRange = 1 }, false),
                 new Character("Szkielet", CharacterClass.Hunter, new CharacterStats { MaxHealth = 30, Armor = 0, Speed = 7, Attack = 10, MovementPoints = 3, AttackRange = 4 }, false)
             };
-
             _playerParty[0].CombatPosition = new Point(1, 2);
             _playerParty[1].CombatPosition = new Point(1, 4);
             _playerParty[2].CombatPosition = new Point(1, 6);
             var random = new Random();
             _enemies[0].CombatPosition = new Point(random.Next(12, 15), random.Next(1, 4));
             _enemies[1].CombatPosition = new Point(random.Next(12, 15), random.Next(5, 8));
-
             _combatants = new List<Character>();
             _combatants.AddRange(_playerParty);
             _combatants.AddRange(_enemies);
             foreach (var character in _combatants)
             {
+                character.Initiative = 0;
                 _combatGrid.GetTile(character.CombatPosition.X, character.CombatPosition.Y)?.SetOccupant(character);
             }
-            _combatants = _combatants.OrderByDescending(c => c.Stats.Speed).ToList();
-            _currentTurnIndex = 0;
-            StartTurn();
-        }
-
-        private void StartTurn()
-        {
-            if (!_combatants.Any(c => c.IsAlive)) { _currentState = CombatState.Finished; return; }
-            while (!_combatants[_currentTurnIndex].IsAlive)
-            {
-                _currentTurnIndex = (_currentTurnIndex + 1) % _combatants.Count;
-            }
-            var currentCombatant = _combatants[_currentTurnIndex];
-            _combatLog = $"Tura: {currentCombatant.Name}";
-            if (currentCombatant.IsPlayerControlled)
-            {
-                _currentState = CombatState.PlayerActionSelect;
-                _actionIndex = 0;
-            }
-            else
-            {
-                _currentState = CombatState.EnemyTurn;
-            }
+            NextTurn();
         }
 
         private void NextTurn()
         {
-            _currentTurnIndex = (_currentTurnIndex + 1) % _combatants.Count;
-            StartTurn();
+            _currentState = CombatState.ProcessingTurn; // Zawsze przechodź przez stan przetwarzania
+        }
+
+        private void ProcessTurn()
+        {
+            while (true)
+            {
+                foreach (var c in _combatants.Where(ch => ch.IsAlive))
+                {
+                    c.Initiative += c.Stats.Speed;
+                }
+                var readyCombatants = _combatants.Where(c => c.IsAlive && c.Initiative >= 100).ToList();
+                if (readyCombatants.Any())
+                {
+                    _activeCombatant = readyCombatants.OrderByDescending(c => c.Initiative).First();
+                    _activeCombatant.Initiative -= 100;
+                    _combatLog = $"Tura: {_activeCombatant.Name}";
+                    if (_activeCombatant.IsPlayerControlled)
+                    {
+                        _currentState = CombatState.PlayerActionSelect;
+                        _actionIndex = 0;
+                    }
+                    else
+                    {
+                        _currentState = CombatState.EnemyTurn;
+                    }
+                    return;
+                }
+            }
         }
 
         public GameState Update(GameTime gameTime)
@@ -107,10 +113,14 @@ namespace Zabbor.Screens
 
             switch (_currentState)
             {
+                case CombatState.ProcessingTurn: 
+                    ProcessTurn(); 
+                    break;
                 case CombatState.PlayerActionSelect: HandleActionSelection(); break;
                 case CombatState.PlayerMoveSelect: HandleMoveSelection(); break;
-                case CombatState.PlayerTargetTileSelect: HandleTargetTileSelection(); break; // ZMIANA
-                case CombatState.EnemyTurn: ExecuteEnemyTurn(); break;
+                case CombatState.PlayerTargetTileSelect: HandleTargetTileSelection(); break;
+                case CombatState.ExecutingMove: HandleMoveExecution(gameTime); break;
+                case CombatState.EnemyTurn: ExecuteEnemyTurn(gameTime); break;
             }
             return GameState.Combat;
         }
@@ -125,13 +135,20 @@ namespace Zabbor.Screens
             }
             if (InputManager.WasKeyPressed(Keys.Enter))
             {
-                var activeCharacter = _combatants[_currentTurnIndex];
+                var activeCharacter = _activeCombatant;
                 switch (_actions[_actionIndex])
                 {
                     case "Ruch":
                         _reachableTiles = GetReachableTiles(activeCharacter);
-                        _cursorPosition = activeCharacter.CombatPosition;
-                        _currentState = CombatState.PlayerMoveSelect;
+                        if (_reachableTiles.Any())
+                        {
+                            _cursorPosition = activeCharacter.CombatPosition;
+                            _currentState = CombatState.PlayerMoveSelect;
+                        }
+                        else
+                        {
+                            _combatLog = $"{activeCharacter.Name} nie ma gdzie sie ruszyc!";
+                        }
                         break;
                     case "Atakuj":
                         _attackableTiles = GetAttackableTiles(activeCharacter);
@@ -164,13 +181,13 @@ namespace Zabbor.Screens
             {
                 if (_reachableTiles.Contains(_cursorPosition))
                 {
-                    var character = _combatants[_currentTurnIndex];
-                    _combatGrid.GetTile(character.CombatPosition.X, character.CombatPosition.Y).ClearOccupant();
-                    _combatGrid.GetTile(_cursorPosition.X, _cursorPosition.Y).SetOccupant(character);
-                    character.CombatPosition = _cursorPosition;
-                    _combatLog = $"{character.Name} przemieszcza sie.";
-                    _reachableTiles.Clear();
-                    NextTurn();
+                    var path = FindPath(_activeCombatant.CombatPosition, _cursorPosition);
+                    if (path != null)
+                    {
+                        _movePath = new Queue<Point>(path.Skip(1));
+                        _currentState = CombatState.ExecutingMove;
+                        _reachableTiles.Clear();
+                    }
                 }
             }
         }
@@ -194,7 +211,7 @@ namespace Zabbor.Screens
             {
                 if (_attackableTiles.Contains(_cursorPosition))
                 {
-                    var attacker = _combatants[_currentTurnIndex];
+                    var attacker = _activeCombatant;
                     var target = _combatGrid.GetTile(_cursorPosition.X, _cursorPosition.Y).Occupant;
 
                     if (target != null && !target.IsPlayerControlled) // Można atakować tylko wrogów
@@ -233,21 +250,30 @@ namespace Zabbor.Screens
                 }
             }
         }
-        
-        private void ExecuteEnemyTurn()
+
+        private void ExecuteEnemyTurn(GameTime gameTime)
         {
-            var attacker = _combatants[_currentTurnIndex];
-            var targets = GetTargetsInRange(attacker);
-            var target = targets.OrderBy(p => p.Stats.CurrentHealth).FirstOrDefault();
-            if (target != null)
+            _enemyTurnTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (_enemyTurnTimer < 1f)
+            {
+                return;
+            }
+            _enemyTurnTimer = 0f;
+
+            var attacker = _activeCombatant;
+            var targetsInRange = GetTargetsInRange(attacker);
+            var target = targetsInRange.OrderBy(p => p.Stats.CurrentHealth).FirstOrDefault();
+
+            if (target != null) // Jeśli jest cel w zasięgu -> Atakuj
             {
                 int damageDealt = Math.Max(1, attacker.Stats.Attack - target.Stats.Armor);
                 target.TakeDamage(attacker.Stats.Attack);
                 _combatLog = $"{attacker.Name} atakuje {target.Name} i zadaje {damageDealt} obrazen!";
                 if (!target.IsAlive) _combatLog += $" {target.Name} pokonany!";
+                
                 if (!_playerParty.Any(p => p.IsAlive))
                 {
-                    _combatLog = "Porażka...";
+                    _combatLog = "Porazka...";
                     _currentState = CombatState.Finished;
                 }
                 else
@@ -255,15 +281,40 @@ namespace Zabbor.Screens
                     NextTurn();
                 }
             }
-            else
+            else // Jeśli nie ma celu w zasięgu -> Spróbuj się ruszyć
             {
-                _combatLog = $"{attacker.Name} nie ma celu w zasiegu.";
+                var closestPlayer = _playerParty
+                    .Where(p => p.IsAlive)
+                    .OrderBy(p => Math.Abs(p.CombatPosition.X - attacker.CombatPosition.X) + Math.Abs(p.CombatPosition.Y - attacker.CombatPosition.Y))
+                    .FirstOrDefault();
+
+                if (closestPlayer != null)
+                {
+                    // ---- POPRAWIONA LOGIKA ----
+                    // 1. Znajdź najbliższe wolne pole OBOK celu
+                    Point destination = GetClosestAdjacentTile(attacker, closestPlayer);
+
+                    // 2. Wyznacz ścieżkę do tego wolnego pola
+                    var path = FindPath(attacker.CombatPosition, destination);
+
+                    if (path != null && path.Count > 1)
+                    {
+                        int moveDistance = Math.Min(path.Count - 1, attacker.Stats.MovementPoints);
+                        var actualPath = path.Take(moveDistance + 1);
+                        _movePath = new Queue<Point>(actualPath.Skip(1));
+                        _currentState = CombatState.ExecutingMove;
+                        _combatLog = $"{attacker.Name} przemieszcza sie w strone {closestPlayer.Name}.";
+                        return; 
+                    }
+                }
+                // Jeśli nie da się ruszyć lub nie ma celu, po prostu zakończ turę
                 NextTurn();
             }
         }
 
         public void Draw(SpriteBatch spriteBatch)
         {
+            // ---- 1. RYSOWANIE SIATKI I KURSORA ----
             for (int y = 0; y < _combatGrid.Height; y++)
             {
                 for (int x = 0; x < _combatGrid.Width; x++)
@@ -284,11 +335,17 @@ namespace Zabbor.Screens
                 }
             }
 
+            // ---- 2. RYSOWANIE POSTACI I PASKÓW HP ----
             foreach (var character in _playerParty.Concat(_enemies))
             {
                 if (!character.IsAlive) continue;
                 var charColor = character.IsPlayerControlled ? Color.CornflowerBlue : Color.IndianRed;
-                if (character == _combatants.FirstOrDefault(c => c.IsAlive)) charColor = Color.Yellow;
+
+                // POPRAWKA: Używamy _activeCombatant z pola klasy
+                if (character == _activeCombatant)
+                {
+                    charColor = Color.Yellow;
+                }
 
                 var charScreenPos = new Rectangle(character.CombatPosition.X * TILE_SIZE, character.CombatPosition.Y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 spriteBatch.Draw(Placeholder.Texture, charScreenPos, charColor);
@@ -303,25 +360,20 @@ namespace Zabbor.Screens
                 }
             }
 
-            var livingEnemies = _enemies.Where(e => e.IsAlive).ToList();
-            var activeCombatant = _combatants.FirstOrDefault(c => c.IsAlive);
+            // ---- 3. RYSOWANIE INTERFEJSU (LOG, MENU, KOLEJKA) ----
 
-            if (_currentState == CombatState.PlayerTargetSelect && _targetsInRange.Any())
-            {
-                var target = _targetsInRange[_targetIndex];
-                var targetIndicatorPos = new Vector2(target.CombatPosition.X * TILE_SIZE + TILE_SIZE / 4, target.CombatPosition.Y * TILE_SIZE - 20);
-                spriteBatch.DrawString(_font, "V", targetIndicatorPos, Color.Red);
-            }
-
+            // Log walki na dole ekranu
             var logText = _combatLog;
             var logTextSize = _font.MeasureString(logText);
-            var logTextPosition = new Vector2((_combatGrid.Width * TILE_SIZE - logTextSize.X) / 2, 600);
+            var logTextPosition = new Vector2((_combatGrid.Width * TILE_SIZE - logTextSize.X) / 2, 650);
             spriteBatch.Draw(Placeholder.Texture, new Rectangle((int)logTextPosition.X - 10, (int)logTextPosition.Y - 5, (int)logTextSize.X + 20, (int)logTextSize.Y + 10), Color.Black * 0.7f);
             spriteBatch.DrawString(_font, logText, logTextPosition, Color.White);
 
+            // Menu i kolejka po prawej stronie
             var uiPosition = new Vector2(_combatGrid.Width * TILE_SIZE + 50, 50);
 
-            if (activeCombatant != null && activeCombatant.IsPlayerControlled && _currentState == CombatState.PlayerActionSelect)
+            // Rysowanie menu akcji
+            if (_activeCombatant != null && _activeCombatant.IsPlayerControlled && _currentState == CombatState.PlayerActionSelect)
             {
                 spriteBatch.DrawString(_font, "AKCJE:", uiPosition, Color.White);
                 uiPosition.Y += 30;
@@ -335,13 +387,20 @@ namespace Zabbor.Screens
 
             uiPosition.Y += 30;
 
+            // Rysowanie kolejki tury
             spriteBatch.DrawString(_font, "KOLEJKA:", uiPosition, Color.White);
             uiPosition.Y += 30;
-            foreach (var combatant in _combatants.Where(c => c.IsAlive))
+
+            // Tworzymy tymczasową kolejkę do wyświetlenia
+            var turnQueue = _combatants.Where(c => c.IsAlive).OrderByDescending(c => c.Initiative).ToList();
+
+            foreach (var combatant in turnQueue)
             {
                 var color = combatant.IsPlayerControlled ? Color.Cyan : Color.Red;
                 var text = $"{combatant.Name} (HP: {combatant.Stats.CurrentHealth})";
-                if (combatant == activeCombatant)
+
+                // POPRAWKA: Używamy _activeCombatant z pola klasy do podświetlenia
+                if (combatant == _activeCombatant)
                     spriteBatch.DrawString(_font, "> " + text, uiPosition, Color.Yellow);
                 else
                     spriteBatch.DrawString(_font, "  " + text, uiPosition, color);
@@ -397,7 +456,7 @@ namespace Zabbor.Screens
             }
             return targets;
         }
-        
+
         private List<Point> GetAttackableTiles(Character character)
         {
             var attackableTiles = new HashSet<Point>();
@@ -413,6 +472,97 @@ namespace Zabbor.Screens
                 }
             }
             return attackableTiles.ToList();
+        }
+
+        private List<Point> FindPath(Point start, Point end)
+        {
+            var queue = new Queue<List<Point>>();
+            var visited = new HashSet<Point> { start };
+            queue.Enqueue(new List<Point> { start });
+
+            while (queue.Count > 0)
+            {
+                var path = queue.Dequeue();
+                var current = path.Last();
+
+                if (current == end) return path;
+
+                Point[] neighbors = {
+                    new Point(current.X, current.Y - 1), new Point(current.X, current.Y + 1),
+                    new Point(current.X - 1, current.Y), new Point(current.X + 1, current.Y)
+                };
+
+                foreach (var neighbor in neighbors)
+                {
+                    if (!visited.Contains(neighbor))
+                    {
+                        var tile = _combatGrid.GetTile(neighbor.X, neighbor.Y);
+
+                        // POPRAWKA: Sprawdzamy, czy pole jest puste LUB czy jest to nasz ostateczny cel
+                        if (tile != null && (tile.Occupant == null || neighbor == end))
+                        {
+                            visited.Add(neighbor);
+                            var newPath = new List<Point>(path) { neighbor };
+                            queue.Enqueue(newPath);
+                        }
+                    }
+                }
+            }
+            return null; // Nie znaleziono ścieżki
+        }
+        
+        private Point GetClosestAdjacentTile(Character attacker, Character target)
+        {
+            Point bestTile = attacker.CombatPosition;
+            int closestDist = int.MaxValue;
+
+            Point[] neighbors = {
+                new Point(target.CombatPosition.X, target.CombatPosition.Y - 1),
+                new Point(target.CombatPosition.X, target.CombatPosition.Y + 1),
+                new Point(target.CombatPosition.X - 1, target.CombatPosition.Y),
+                new Point(target.CombatPosition.X + 1, target.CombatPosition.Y)
+            };
+
+            foreach (var neighbor in neighbors)
+            {
+                var tile = _combatGrid.GetTile(neighbor.X, neighbor.Y);
+                if (tile != null && tile.IsWalkable)
+                {
+                    int dist = Math.Abs(attacker.CombatPosition.X - neighbor.X) + Math.Abs(attacker.CombatPosition.Y - neighbor.Y);
+                    if (dist < closestDist)
+                    {
+                        closestDist = dist;
+                        bestTile = neighbor;
+                    }
+                }
+            }
+            return bestTile;
+        }
+
+        private void HandleMoveExecution(GameTime gameTime)
+        {
+            _moveTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_moveTimer < TIME_PER_TILE)
+            {
+                return;
+            }
+            _moveTimer = 0f;
+
+            if (_movePath != null && _movePath.Count > 0)
+            {
+                var nextTile = _movePath.Dequeue();
+                var character = _activeCombatant;
+
+                _combatGrid.GetTile(character.CombatPosition.X, character.CombatPosition.Y).ClearOccupant();
+                _combatGrid.GetTile(nextTile.X, nextTile.Y).SetOccupant(character);
+                character.CombatPosition = nextTile;
+            }
+
+            if (_movePath == null || _movePath.Count == 0)
+            {
+                NextTurn();
+            }
         }
     }
 }

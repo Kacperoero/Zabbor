@@ -13,6 +13,7 @@ namespace Zabbor.ZabborBase.Entities
         public bool IsPlayerControlled { get; set; }
         public Point CombatPosition { get; set; }
         public bool IsAlive => Stats.CurrentHealth > 0;
+        public float Initiative { get; set; } = 0f;
 
         public Character(string name, CharacterClass characterClass, CharacterStats stats, bool isPlayerControlled)
         {
